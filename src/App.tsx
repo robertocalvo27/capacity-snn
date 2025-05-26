@@ -13,6 +13,10 @@ import { ActionRoutes } from './pages/actions';
 import { DebugRoutes } from './pages/debug/routes';
 import type { User } from './types/auth';
 import BalanceLinea from './pages/engineering/BalanceLinea';
+import RoadsterCapacities from './pages/capacities/Roadster';
+import CapacityModelPage from './pages/capacities';
+import MonthDetail from './pages/capacities/MonthDetail';
+import VSTDetail from './pages/capacities/VSTDetail';
 
 // Usuario de prueba
 const testUser: User = {
@@ -23,6 +27,15 @@ const testUser: User = {
   valueStream: 'ENT',
   lastLogin: new Date()
 };
+
+function CapacityMonthDetail() {
+  return (
+    <div className="p-8">
+      <h2 className="text-2xl font-bold mb-6">Detalle del CBP mensual</h2>
+      <p>Aquí se mostrarán los Value Streams (VST) para el mes seleccionado.</p>
+    </div>
+  );
+}
 
 export default function App() {
   const [user, setUser] = useState<User | null>(null);
@@ -52,6 +65,10 @@ export default function App() {
           <Route path="/settings/*" element={<SettingsRoutes />} />
           <Route path="/legal/*" element={<LegalRoutes />} />
           <Route path="/engineering/balance-linea" element={<BalanceLinea />} />
+          <Route path="/capacities/roadster" element={<RoadsterCapacities />} />
+          <Route path="/capacities" element={<CapacityModelPage />} />
+          <Route path="/capacities/:cbpId" element={<MonthDetail />} />
+          <Route path="/capacities/:cbpId/:vstId" element={<VSTDetail />} />
           {DebugRoutes}
         </Routes>
       </Layout>
