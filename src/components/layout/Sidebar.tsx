@@ -100,6 +100,11 @@ const navigation: NavItem[] = [
     subItems: [
       { name: 'Balance Linea', href: '/engineering/balance-linea', icon: Sliders }
     ]
+  },
+  {
+    name: 'Capacity Model',
+    href: '/capacities',
+    icon: BarChart2
   }
 ];
 
