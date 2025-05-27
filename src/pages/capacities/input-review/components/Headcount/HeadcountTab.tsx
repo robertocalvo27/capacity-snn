@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Search, Filter, Upload, Save, FileInput, Check, ChevronDown, ChevronRight, Edit, Info } from 'lucide-react';
 import Pagination from '../common/Pagination';
 import HeadcountApprovalLog from './HeadcountApprovalLog';
@@ -68,9 +68,7 @@ const HeadcountTab: React.FC<HeadcountTabProps> = ({ onSave }) => {
   const [showPositionDetails, setShowPositionDetails] = useState<Record<string, boolean>>({});
   const [activeDetailLevel, setActiveDetailLevel] = useState<'shift' | 'position'>('shift');
   const [data, setData] = useState<HeadcountValueStream[]>(headcountData);
-
-  // Datos mock para el historial de aprobaciones
-  const approvalLogs: HeadcountLog[] = [
+  const [localApprovalLogs, setLocalApprovalLogs] = useState<HeadcountLog[]>([
     {
       id: 1,
       valueStream: 'ENT',
@@ -91,7 +89,67 @@ const HeadcountTab: React.FC<HeadcountTabProps> = ({ onSave }) => {
       approvedBy: 'Juan Pérez',
       approvedAt: '2024-01-16 10:35'
     }
-  ];
+  ]);
+  
+  // Estados para el selector de período y vista
+  const [selectedPeriod, setSelectedPeriod] = useState<string>('202504'); // Abril 2025 como ejemplo
+  const [viewType, setViewType] = useState<'table' | 'chart'>('table');
+  // Using string literal to avoid TypeScript narrow type comparison errors
+  const [chartType, setChartType] = useState<string>('bar');
+  const [selectedVSTForChart, setSelectedVSTForChart] = useState<string | null>(null);
+
+  // Interfaces para datos históricos
+  interface HistoricalDataPoint {
+    month: string;
+    total: number;
+  }
+
+  interface ValueStreamHistoricalData {
+    name: string;
+    id: string;
+    color: string;
+    data: HistoricalDataPoint[];
+  }
+
+  interface HistoricalDataSet {
+    months: string[];
+    series: ValueStreamHistoricalData[];
+  }
+
+  // Generar lista de períodos para el selector (últimos 12 meses)
+  const generatePeriods = () => {
+    const periods = [];
+    const currentDate = new Date();
+    
+    // Incluir el periodo actual y 11 meses anteriores
+    for (let i = 0; i < 12; i++) {
+      const year = currentDate.getFullYear();
+      const month = currentDate.getMonth() + 1 - i;
+      
+      // Ajustar año y mes para meses anteriores
+      const adjustedYear = month <= 0 ? year - 1 : year;
+      const adjustedMonth = month <= 0 ? month + 12 : month;
+      
+      const periodValue = `${adjustedYear}${adjustedMonth.toString().padStart(2, '0')}`;
+      const periodLabel = `${getMonthName(adjustedMonth)} ${adjustedYear}`;
+      
+      periods.push({ value: periodValue, label: periodLabel });
+    }
+    
+    return periods;
+  };
+  
+  // Función auxiliar para obtener el nombre del mes
+  const getMonthName = (month: number) => {
+    const monthNames = [
+      'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
+      'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'
+    ];
+    return monthNames[month - 1];
+  };
+  
+  // Lista de períodos
+  const periods = generatePeriods();
 
   // Función para seleccionar/deseleccionar todos los headcounts
   const handleSelectAllHeadcounts = (checked: boolean) => {
@@ -155,7 +213,7 @@ const HeadcountTab: React.FC<HeadcountTabProps> = ({ onSave }) => {
     );
     
     // Guardar los logs
-    setApprovalLogs(prev => [...prev, ...newLogs]);
+    setLocalApprovalLogs(prev => [...prev, ...newLogs]);
     
     // Cerrar el modal y mostrar notificación
     setShowApprovalConfirm(false);
@@ -260,12 +318,802 @@ const HeadcountTab: React.FC<HeadcountTabProps> = ({ onSave }) => {
     onSave();
   };
 
+  // Modificar la inicialización de datos para incluir las líneas actualizadas del archivo VST y Lineas.csv
+  useEffect(() => {
+    // Actualizar las líneas para cada Value Stream, excepto External Areas y Joint Repair
+    const updatedData = data.map(valueStream => {
+      if (valueStream.id === 'sportsMedicine') {
+        const totalShift1 = valueStream.shifts[0].total;
+        const totalShift2 = valueStream.shifts[1].total;
+        const totalShift3 = valueStream.shifts[2].total;
+        const lineCount = 5; // Sin contar "Total"
+        
+        // Distribuir los operadores uniformemente entre las líneas
+        const perLineShift1 = Math.floor(totalShift1 / lineCount);
+        const perLineShift2 = Math.floor(totalShift2 / lineCount);
+        const perLineShift3 = Math.floor(totalShift3 / lineCount);
+        
+        // Residuos para asignar a la primera línea
+        const remainderShift1 = totalShift1 % lineCount;
+        const remainderShift2 = totalShift2 % lineCount;
+        const remainderShift3 = totalShift3 % lineCount;
+        
+        const lines = [
+          {
+            id: 1, 
+            name: 'L02', 
+            expanded: false, 
+            shifts: [
+              {...valueStream.shifts[0], total: perLineShift1 + remainderShift1},
+              {...valueStream.shifts[1], total: perLineShift2 + remainderShift2},
+              {...valueStream.shifts[2], total: perLineShift3 + remainderShift3}
+            ],
+            total: perLineShift1 + remainderShift1 + perLineShift2 + remainderShift2 + perLineShift3 + remainderShift3
+          },
+          {
+            id: 2, 
+            name: 'L03', 
+            expanded: false, 
+            shifts: [
+              {...valueStream.shifts[0], total: perLineShift1},
+              {...valueStream.shifts[1], total: perLineShift2},
+              {...valueStream.shifts[2], total: perLineShift3}
+            ],
+            total: perLineShift1 + perLineShift2 + perLineShift3
+          },
+          {
+            id: 3, 
+            name: 'L04', 
+            expanded: false, 
+            shifts: [
+              {...valueStream.shifts[0], total: perLineShift1},
+              {...valueStream.shifts[1], total: perLineShift2},
+              {...valueStream.shifts[2], total: perLineShift3}
+            ],
+            total: perLineShift1 + perLineShift2 + perLineShift3
+          },
+          {
+            id: 4, 
+            name: 'L05', 
+            expanded: false, 
+            shifts: [
+              {...valueStream.shifts[0], total: perLineShift1},
+              {...valueStream.shifts[1], total: perLineShift2},
+              {...valueStream.shifts[2], total: perLineShift3}
+            ],
+            total: perLineShift1 + perLineShift2 + perLineShift3
+          },
+          {
+            id: 5, 
+            name: 'L09', 
+            expanded: false, 
+            shifts: [
+              {...valueStream.shifts[0], total: perLineShift1},
+              {...valueStream.shifts[1], total: perLineShift2},
+              {...valueStream.shifts[2], total: perLineShift3}
+            ],
+            total: perLineShift1 + perLineShift2 + perLineShift3
+          },
+          {
+            id: 6, 
+            name: 'Total', 
+            expanded: false, 
+            shifts: [...valueStream.shifts],
+            total: valueStream.total
+          }
+        ];
+        
+        return {
+          ...valueStream,
+          lines
+        };
+      } else if (valueStream.id === 'ent') {
+        const totalShift1 = valueStream.shifts[0].total;
+        const totalShift2 = valueStream.shifts[1].total;
+        const totalShift3 = valueStream.shifts[2].total;
+        const lineCount = 5; // Sin contar "Total"
+        
+        // Distribuir los operadores uniformemente entre las líneas
+        const perLineShift1 = Math.floor(totalShift1 / lineCount);
+        const perLineShift2 = Math.floor(totalShift2 / lineCount);
+        const perLineShift3 = Math.floor(totalShift3 / lineCount);
+        
+        // Residuos para asignar a la primera línea
+        const remainderShift1 = totalShift1 % lineCount;
+        const remainderShift2 = totalShift2 % lineCount;
+        const remainderShift3 = totalShift3 % lineCount;
+        
+        const lines = [
+          {
+            id: 1, 
+            name: 'L06', 
+            expanded: false, 
+            shifts: [
+              {...valueStream.shifts[0], total: perLineShift1 + remainderShift1},
+              {...valueStream.shifts[1], total: perLineShift2 + remainderShift2},
+              {...valueStream.shifts[2], total: perLineShift3 + remainderShift3}
+            ],
+            total: perLineShift1 + remainderShift1 + perLineShift2 + remainderShift2 + perLineShift3 + remainderShift3
+          },
+          {
+            id: 2, 
+            name: 'L07', 
+            expanded: false, 
+            shifts: [
+              {...valueStream.shifts[0], total: perLineShift1},
+              {...valueStream.shifts[1], total: perLineShift2},
+              {...valueStream.shifts[2], total: perLineShift3}
+            ],
+            total: perLineShift1 + perLineShift2 + perLineShift3
+          },
+          {
+            id: 3, 
+            name: 'L10', 
+            expanded: false, 
+            shifts: [
+              {...valueStream.shifts[0], total: perLineShift1},
+              {...valueStream.shifts[1], total: perLineShift2},
+              {...valueStream.shifts[2], total: perLineShift3}
+            ],
+            total: perLineShift1 + perLineShift2 + perLineShift3
+          },
+          {
+            id: 4, 
+            name: 'L11', 
+            expanded: false, 
+            shifts: [
+              {...valueStream.shifts[0], total: perLineShift1},
+              {...valueStream.shifts[1], total: perLineShift2},
+              {...valueStream.shifts[2], total: perLineShift3}
+            ],
+            total: perLineShift1 + perLineShift2 + perLineShift3
+          },
+          {
+            id: 5, 
+            name: 'L08 Rapid Rhino', 
+            expanded: false, 
+            shifts: [
+              {...valueStream.shifts[0], total: perLineShift1},
+              {...valueStream.shifts[1], total: perLineShift2},
+              {...valueStream.shifts[2], total: perLineShift3}
+            ],
+            total: perLineShift1 + perLineShift2 + perLineShift3
+          },
+          {
+            id: 6, 
+            name: 'Total', 
+            expanded: false, 
+            shifts: [...valueStream.shifts],
+            total: valueStream.total
+          }
+        ];
+        
+        return {
+          ...valueStream,
+          lines
+        };
+      } else if (valueStream.id === 'wound') {
+        const totalShift1 = valueStream.shifts[0].total;
+        const totalShift2 = valueStream.shifts[1].total;
+        const totalShift3 = valueStream.shifts[2].total;
+        const lineCount = 2; // Sin contar "Total"
+        
+        // Distribuir los operadores uniformemente entre las líneas
+        const perLineShift1 = Math.floor(totalShift1 / lineCount);
+        const perLineShift2 = Math.floor(totalShift2 / lineCount);
+        const perLineShift3 = Math.floor(totalShift3 / lineCount);
+        
+        // Residuos para asignar a la primera línea
+        const remainderShift1 = totalShift1 % lineCount;
+        const remainderShift2 = totalShift2 % lineCount;
+        const remainderShift3 = totalShift3 % lineCount;
+        
+        const lines = [
+          {
+            id: 1, 
+            name: 'Pico', 
+            expanded: false, 
+            shifts: [
+              {...valueStream.shifts[0], total: perLineShift1 + remainderShift1},
+              {...valueStream.shifts[1], total: perLineShift2 + remainderShift2},
+              {...valueStream.shifts[2], total: perLineShift3 + remainderShift3}
+            ],
+            total: perLineShift1 + remainderShift1 + perLineShift2 + remainderShift2 + perLineShift3 + remainderShift3
+          },
+          {
+            id: 2, 
+            name: 'Gal', 
+            expanded: false, 
+            shifts: [
+              {...valueStream.shifts[0], total: perLineShift1},
+              {...valueStream.shifts[1], total: perLineShift2},
+              {...valueStream.shifts[2], total: perLineShift3}
+            ],
+            total: perLineShift1 + perLineShift2 + perLineShift3
+          },
+          {
+            id: 3, 
+            name: 'Total', 
+            expanded: false, 
+            shifts: [...valueStream.shifts],
+            total: valueStream.total
+          }
+        ];
+        
+        return {
+          ...valueStream,
+          lines
+        };
+      } else if (valueStream.id === 'regenetenFS') {
+        // Este es Fixation según el archivo
+        const totalShift1 = valueStream.shifts[0].total;
+        const totalShift2 = valueStream.shifts[1].total;
+        const totalShift3 = valueStream.shifts[2].total;
+        const lineCount = 7; // Sin contar "Total"
+        
+        // Distribuir los operadores uniformemente entre las líneas
+        const perLineShift1 = Math.floor(totalShift1 / lineCount);
+        const perLineShift2 = Math.floor(totalShift2 / lineCount);
+        const perLineShift3 = Math.floor(totalShift3 / lineCount);
+        
+        // Residuos para asignar a la primera línea
+        const remainderShift1 = totalShift1 % lineCount;
+        const remainderShift2 = totalShift2 % lineCount;
+        const remainderShift3 = totalShift3 % lineCount;
+        
+        const lines = [
+          {
+            id: 1, 
+            name: 'L12', 
+            expanded: false, 
+            shifts: [
+              {...valueStream.shifts[0], total: perLineShift1 + remainderShift1},
+              {...valueStream.shifts[1], total: perLineShift2 + remainderShift2},
+              {...valueStream.shifts[2], total: perLineShift3 + remainderShift3}
+            ],
+            total: perLineShift1 + remainderShift1 + perLineShift2 + remainderShift2 + perLineShift3 + remainderShift3
+          },
+          {
+            id: 2, 
+            name: 'L13', 
+            expanded: false, 
+            shifts: [
+              {...valueStream.shifts[0], total: perLineShift1},
+              {...valueStream.shifts[1], total: perLineShift2},
+              {...valueStream.shifts[2], total: perLineShift3}
+            ],
+            total: perLineShift1 + perLineShift2 + perLineShift3
+          },
+          {
+            id: 3, 
+            name: 'L14', 
+            expanded: false, 
+            shifts: [
+              {...valueStream.shifts[0], total: perLineShift1},
+              {...valueStream.shifts[1], total: perLineShift2},
+              {...valueStream.shifts[2], total: perLineShift3}
+            ],
+            total: perLineShift1 + perLineShift2 + perLineShift3
+          },
+          {
+            id: 4, 
+            name: 'L14.5', 
+            expanded: false, 
+            shifts: [
+              {...valueStream.shifts[0], total: perLineShift1},
+              {...valueStream.shifts[1], total: perLineShift2},
+              {...valueStream.shifts[2], total: perLineShift3}
+            ],
+            total: perLineShift1 + perLineShift2 + perLineShift3
+          },
+          {
+            id: 5, 
+            name: 'L15', 
+            expanded: false, 
+            shifts: [
+              {...valueStream.shifts[0], total: perLineShift1},
+              {...valueStream.shifts[1], total: perLineShift2},
+              {...valueStream.shifts[2], total: perLineShift3}
+            ],
+            total: perLineShift1 + perLineShift2 + perLineShift3
+          },
+          {
+            id: 6, 
+            name: 'L17', 
+            expanded: false, 
+            shifts: [
+              {...valueStream.shifts[0], total: perLineShift1},
+              {...valueStream.shifts[1], total: perLineShift2},
+              {...valueStream.shifts[2], total: perLineShift3}
+            ],
+            total: perLineShift1 + perLineShift2 + perLineShift3
+          },
+          {
+            id: 7, 
+            name: 'Cer 3', 
+            expanded: false, 
+            shifts: [
+              {...valueStream.shifts[0], total: perLineShift1},
+              {...valueStream.shifts[1], total: perLineShift2},
+              {...valueStream.shifts[2], total: perLineShift3}
+            ],
+            total: perLineShift1 + perLineShift2 + perLineShift3
+          },
+          {
+            id: 8, 
+            name: 'Total', 
+            expanded: false, 
+            shifts: [...valueStream.shifts],
+            total: valueStream.total
+          }
+        ];
+        
+        return {
+          ...valueStream,
+          name: 'Fixation',
+          lines
+        };
+      } else {
+        // Mantener las líneas como están para External Areas y Joint Repair
+        return valueStream;
+      }
+    });
+
+    setData(updatedData);
+  }, []);
+
+  // Generar datos históricos simulados para el gráfico
+  const generateHistoricalData = (): HistoricalDataSet => {
+    // Generar 6 meses de datos históricos para cada Value Stream
+    const historicalMonths = 6;
+    const result: ValueStreamHistoricalData[] = [];
+    
+    // Obtener los últimos 6 meses
+    const months: string[] = [];
+    const currentDate = new Date();
+    
+    for (let i = 0; i < historicalMonths; i++) {
+      const year = currentDate.getFullYear();
+      const month = currentDate.getMonth() - i;
+      
+      // Ajustar año y mes para meses anteriores
+      const adjustedYear = month < 0 ? year - 1 : year;
+      const adjustedMonth = month < 0 ? month + 12 : month;
+      
+      months.unshift(`${getMonthName(adjustedMonth + 1).substring(0, 3)} ${adjustedYear}`);
+    }
+    
+    // Para cada Value Stream, generar datos históricos
+    const valueStreamColors: Record<string, string> = {
+      'sportsMedicine': '#4f46e5', // Indigo
+      'ent': '#0ea5e9', // Sky
+      'jointRepair': '#10b981', // Emerald
+      'regenetenFS': '#f59e0b', // Amber
+      'wound': '#ef4444', // Red
+      'apollo': '#8b5cf6', // Violet
+      'externalAreas': '#64748b' // Slate
+    };
+    
+    data.forEach(vst => {
+      if (vst.id === 'totalSite') return; // Omitir el total del sitio
+      
+      const baseValue = vst.total;
+      const vstData: ValueStreamHistoricalData = {
+        name: vst.name,
+        id: vst.id,
+        color: valueStreamColors[vst.id] || '#6b7280',
+        data: []
+      };
+      
+      // Generar variaciones para los meses anteriores
+      for (let i = 0; i < historicalMonths; i++) {
+        // Variación aleatoria entre -10% y +15% para simular cambios de personal
+        const variation = baseValue * (Math.random() * 0.25 - 0.1);
+        const total = Math.round(baseValue + variation);
+        
+        vstData.data.push({
+          month: months[i],
+          total: total > 0 ? total : baseValue
+        });
+      }
+      
+      result.push(vstData);
+
+      // Si es el VST seleccionado, también generar datos para sus líneas
+      if (selectedVSTForChart === vst.id && vst.lines && vst.lines.length > 0) {
+        // Excluir la línea "Total"
+        const lines = vst.lines.filter(line => line.name !== 'Total');
+        
+        // Distribuir colores para las líneas usando variaciones del color del VST
+        const baseColor = vstData.color;
+        const lineColors = generateLineColors(baseColor, lines.length);
+        
+        lines.forEach((line, lineIndex) => {
+          const lineBaseValue = line.total;
+          const lineData: ValueStreamHistoricalData = {
+            name: `${vst.name} - Línea ${line.name}`,
+            id: `${vst.id}-line-${line.id}`,
+            color: lineColors[lineIndex],
+            data: []
+          };
+          
+          // Generar variaciones para los meses anteriores
+          for (let i = 0; i < historicalMonths; i++) {
+            // Variación aleatoria entre -15% y +20% para simular cambios de personal
+            const variation = lineBaseValue * (Math.random() * 0.35 - 0.15);
+            const total = Math.round(lineBaseValue + variation);
+            
+            lineData.data.push({
+              month: months[i],
+              total: total > 0 ? total : lineBaseValue
+            });
+          }
+          
+          result.push(lineData);
+        });
+      }
+    });
+    
+    return { months, series: result };
+  };
+  
+  // Función para generar colores para las líneas
+  const generateLineColors = (baseColor: string, count: number): string[] => {
+    const colors: string[] = [];
+    
+    // Convertir el color base hexadecimal a HSL para manipularlo
+    let r = parseInt(baseColor.substring(1, 3), 16) / 255;
+    let g = parseInt(baseColor.substring(3, 5), 16) / 255;
+    let b = parseInt(baseColor.substring(5, 7), 16) / 255;
+    
+    const max = Math.max(r, g, b);
+    const min = Math.min(r, g, b);
+    let h = 0;
+    let s = 0;
+    let l = (max + min) / 2;
+
+    if (max !== min) {
+      const d = max - min;
+      s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+      
+      if (max === r) h = (g - b) / d + (g < b ? 6 : 0);
+      else if (max === g) h = (b - r) / d + 2;
+      else h = (r - g) / d + 4;
+      
+      h /= 6;
+    }
+    
+    // Generar variaciones del color ajustando la luminosidad y saturación
+    for (let i = 0; i < count; i++) {
+      const newL = Math.min(0.8, l + (i * 0.1));
+      const newS = Math.max(0.3, s - (i * 0.05));
+      
+      // Convertir de nuevo a RGB y luego a hex
+      const a = newS * Math.min(newL, 1 - newL);
+      const f = (n: number) => {
+        const k = (n + h * 12) % 12;
+        return newL - a * Math.max(-1, Math.min(k - 3, 9 - k, 1));
+      };
+      
+      const newR = Math.round(f(0) * 255);
+      const newG = Math.round(f(8) * 255);
+      const newB = Math.round(f(4) * 255);
+      
+      colors.push(`#${newR.toString(16).padStart(2, '0')}${newG.toString(16).padStart(2, '0')}${newB.toString(16).padStart(2, '0')}`);
+    }
+    
+    return colors;
+  };
+  
+  // Datos históricos simulados
+  const historicalData = generateHistoricalData();
+
+  // Manejar clic en un VST
+  const handleVSTClick = (vstId: string) => {
+    if (selectedVSTForChart === vstId) {
+      // Si ya está seleccionado, deseleccionarlo
+      setSelectedVSTForChart(null);
+    } else {
+      // Seleccionar el nuevo VST
+      setSelectedVSTForChart(vstId);
+    }
+  };
+
+  // Vista de gráfico mejorada
+  const renderChart = () => {
+    const { months, series } = historicalData;
+    
+    // Título del gráfico
+    const chartTitle = selectedVSTForChart 
+      ? `Histórico de Headcount: ${data.find(vst => vst.id === selectedVSTForChart)?.name || ''}`
+      : 'Histórico de Headcount por Value Stream';
+    
+    // Subtítulo del gráfico
+    const chartSubtitle = selectedVSTForChart
+      ? `Mostrando desglose por líneas de producción`
+      : `Mostrando datos históricos de personal de los últimos 6 meses`;
+    
+    // Renderizar el gráfico de barras
+    if (chartType === 'bar') {
+      const maxValue = Math.max(...series.flatMap(s => s.data.map(d => d.total)));
+      const barWidth = 100 / (series.length * months.length);
+      
+      return (
+        <div className="bg-white p-6 rounded-lg border">
+          <div className="text-center mb-4">
+            <h4 className="text-lg font-medium text-gray-700">{chartTitle}</h4>
+            <p className="text-sm text-gray-500">{chartSubtitle}</p>
+          </div>
+          
+          {/* Selector de tipo de gráfico */}
+          <div className="flex justify-center mb-4">
+            <div className="flex border rounded-md overflow-hidden">
+              <button
+                onClick={() => setChartType('bar')}
+                className={`px-3 py-1 text-sm ${chartType === 'bar' ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-700'}`}
+              >
+                Barras
+              </button>
+              <button
+                onClick={() => setChartType('line')}
+                className={`px-3 py-1 text-sm ${chartType === 'line' ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-700'}`}
+              >
+                Líneas
+              </button>
+            </div>
+          </div>
+          
+          {/* Área del gráfico */}
+          <div className="h-80 relative mt-10">
+            {/* Eje Y - Etiquetas */}
+            <div className="absolute left-0 top-0 bottom-0 w-12 flex flex-col justify-between">
+              {[0, 1, 2, 3, 4].map(i => (
+                <div key={i} className="text-xs text-gray-500 -translate-y-2">
+                  {Math.round(maxValue * (4 - i) / 4)}
+                </div>
+              ))}
+            </div>
+            
+            {/* Eje Y - Líneas de cuadrícula */}
+            <div className="absolute left-12 right-0 top-0 bottom-0">
+              {[0, 1, 2, 3, 4].map(i => (
+                <div 
+                  key={i} 
+                  className="border-t border-gray-200 absolute left-0 right-0" 
+                  style={{ top: `${i * 25}%` }}
+                />
+              ))}
+            </div>
+            
+            {/* Barras */}
+            <div className="absolute left-12 right-0 top-0 bottom-0 flex">
+              {months.map((month, monthIndex) => (
+                <div key={month} className="flex-1 flex flex-col">
+                  <div className="flex-1 flex">
+                    {series.map(vs => {
+                      const dataPoint = vs.data[monthIndex];
+                      const height = dataPoint ? (dataPoint.total / maxValue) * 100 : 0;
+                      
+                      return (
+                        <div 
+                          key={vs.id} 
+                          className="h-full flex items-end" 
+                          style={{ width: `${barWidth}%`, marginLeft: '1%', marginRight: '1%' }}
+                        >
+                          <div 
+                            className="w-full rounded-t-sm hover:opacity-80 cursor-pointer" 
+                            style={{ 
+                              height: `${height}%`, 
+                              backgroundColor: vs.color,
+                              transition: 'height 0.5s ease'
+                            }}
+                            title={`${vs.name}: ${dataPoint?.total || 0} operadores`}
+                            onClick={() => !vs.id.includes('-line-') && handleVSTClick(vs.id)}
+                          />
+                        </div>
+                      );
+                    })}
+                  </div>
+                  <div className="h-6 flex items-center justify-center">
+                    <span className="text-xs text-gray-500">{month}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+          
+          {/* Leyenda */}
+          <div className="mt-6 flex flex-wrap gap-4 justify-center">
+            {series.map(vs => (
+              <div 
+                key={vs.id} 
+                className="flex items-center cursor-pointer hover:bg-gray-100 px-2 py-1 rounded"
+                onClick={() => !vs.id.includes('-line-') && handleVSTClick(vs.id)}
+              >
+                <div 
+                  className="w-4 h-4 mr-2 rounded-sm" 
+                  style={{ backgroundColor: vs.color }}
+                />
+                <span className="text-sm text-gray-700">{vs.name}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      );
+    } else {
+      // Renderizar el gráfico de líneas
+      const maxValue = Math.max(...series.flatMap(s => s.data.map(d => d.total)));
+      
+      return (
+        <div className="bg-white p-6 rounded-lg border">
+          <div className="text-center mb-4">
+            <h4 className="text-lg font-medium text-gray-700">{chartTitle}</h4>
+            <p className="text-sm text-gray-500">{chartSubtitle}</p>
+          </div>
+          
+          {/* Selector de tipo de gráfico */}
+          <div className="flex justify-center mb-4">
+            <div className="flex border rounded-md overflow-hidden">
+              <button
+                onClick={() => setChartType('bar')}
+                className={`px-3 py-1 text-sm ${chartType === 'bar' ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-700'}`}
+              >
+                Barras
+              </button>
+              <button
+                onClick={() => setChartType('line')}
+                className={`px-3 py-1 text-sm ${chartType === 'line' ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-700'}`}
+              >
+                Líneas
+              </button>
+            </div>
+          </div>
+          
+          {/* Área del gráfico */}
+          <div className="h-80 relative mt-10">
+            {/* Eje Y - Etiquetas */}
+            <div className="absolute left-0 top-0 bottom-0 w-12 flex flex-col justify-between">
+              {[0, 1, 2, 3, 4].map(i => (
+                <div key={i} className="text-xs text-gray-500 -translate-y-2">
+                  {Math.round(maxValue * (4 - i) / 4)}
+                </div>
+              ))}
+            </div>
+            
+            {/* Eje Y - Líneas de cuadrícula */}
+            <div className="absolute left-12 right-0 top-0 bottom-0">
+              {[0, 1, 2, 3, 4].map(i => (
+                <div 
+                  key={i} 
+                  className="border-t border-gray-200 absolute left-0 right-0" 
+                  style={{ top: `${i * 25}%` }}
+                />
+              ))}
+            </div>
+            
+            {/* Área del gráfico de líneas */}
+            <div className="absolute left-12 right-0 top-0 bottom-6 flex flex-col">
+              <svg className="w-full h-full" viewBox={`0 0 ${months.length * 100} 100`} preserveAspectRatio="none">
+                {/* Líneas para cada serie */}
+                {series.map(vs => {
+                  // Calcular puntos para la línea
+                  const points = vs.data.map((d, i) => {
+                    const x = (i / (months.length - 1)) * 100 * (months.length - 1);
+                    const y = 100 - ((d.total / maxValue) * 100);
+                    return `${x},${y}`;
+                  }).join(' ');
+                  
+                  return (
+                    <g key={vs.id} onClick={() => !vs.id.includes('-line-') && handleVSTClick(vs.id)}>
+                      {/* Línea */}
+                      <polyline
+                        points={points}
+                        fill="none"
+                        stroke={vs.color}
+                        strokeWidth="2"
+                        className="transition-all duration-500 cursor-pointer hover:stroke-[3px]"
+                      />
+                      
+                      {/* Puntos */}
+                      {vs.data.map((d, i) => {
+                        const x = (i / (months.length - 1)) * 100 * (months.length - 1);
+                        const y = 100 - ((d.total / maxValue) * 100);
+                        
+                        return (
+                          <circle
+                            key={i}
+                            cx={x}
+                            cy={y}
+                            r="3"
+                            fill={vs.color}
+                            className="cursor-pointer hover:r-4"
+                            onMouseOver={(e) => {
+                              const target = e.target as SVGCircleElement;
+                              target.setAttribute('r', '4');
+                            }}
+                            onMouseOut={(e) => {
+                              const target = e.target as SVGCircleElement;
+                              target.setAttribute('r', '3');
+                            }}
+                            data-tooltip={`${vs.name}: ${d.total} operadores`}
+                          />
+                        );
+                      })}
+                    </g>
+                  );
+                })}
+              </svg>
+              
+              {/* Etiquetas del eje X */}
+              <div className="flex h-6 w-full absolute bottom-0 left-0">
+                {months.map((month, i) => (
+                  <div key={month} className="flex-1 text-center">
+                    <span className="text-xs text-gray-500">{month}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+          
+          {/* Leyenda */}
+          <div className="mt-6 flex flex-wrap gap-4 justify-center">
+            {series.map(vs => (
+              <div 
+                key={vs.id} 
+                className="flex items-center cursor-pointer hover:bg-gray-100 px-2 py-1 rounded"
+                onClick={() => !vs.id.includes('-line-') && handleVSTClick(vs.id)}
+              >
+                <div 
+                  className="w-4 h-4 mr-2 rounded-sm" 
+                  style={{ backgroundColor: vs.color }}
+                />
+                <span className="text-sm text-gray-700">{vs.name}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      );
+    }
+  };
+
   return (
     <>
       <div className="flex justify-between items-center mb-6">
         <h3 className="text-lg font-medium text-gray-900">
           Headcount - Personal por Línea
         </h3>
+        
+        {/* Selector de período y botones de vista */}
+        <div className="flex space-x-4">
+          <div className="relative">
+            <select
+              value={selectedPeriod}
+              onChange={(e) => setSelectedPeriod(e.target.value)}
+              className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm text-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+            >
+              {periods.map(period => (
+                <option key={period.value} value={period.value}>
+                  {period.label}
+                </option>
+              ))}
+            </select>
+          </div>
+          
+          <div className="flex border rounded-md overflow-hidden">
+            <button
+              onClick={() => setViewType('table')}
+              className={`px-3 py-1 text-sm ${viewType === 'table' ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-700'}`}
+            >
+              Tabla
+            </button>
+            <button
+              onClick={() => setViewType('chart')}
+              className={`px-3 py-1 text-sm ${viewType === 'chart' ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-700'}`}
+            >
+              Gráfico
+            </button>
+          </div>
+        </div>
       </div>
 
       <div className="mb-6">
@@ -361,90 +1209,11 @@ const HeadcountTab: React.FC<HeadcountTabProps> = ({ onSave }) => {
         {/* Log de aprobaciones (expandible) */}
         {showApprovalLogs && (
           <HeadcountApprovalLog 
-            logs={approvalLogs} 
+            logs={localApprovalLogs} 
             onClose={() => setShowApprovalLogs(false)} 
           />
         )}
       </div>
-
-      {/* Tabla */}
-      <div className="overflow-x-auto border rounded-lg">
-        <table className="min-w-full divide-y divide-gray-200">
-          <thead className="bg-gray-50">
-            <tr>
-              <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider w-12">
-                <input
-                  type="checkbox"
-                  className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-                  checked={selectAllHeadcounts}
-                  onChange={(e) => handleSelectAllHeadcounts(e.target.checked)}
-                />
-              </th>
-              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Línea</th>
-              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Value Stream</th>
-              <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Operadores</th>
-              <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Supervisores</th>
-              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Mes</th>
-              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Estado</th>
-            </tr>
-          </thead>
-          <tbody className="bg-white divide-y divide-gray-200">
-            {currentItems.map((item: HeadcountValueStream) => (
-              <tr key={item.id} className={`hover:bg-gray-50 ${item.expanded ? 'bg-blue-50' : ''}`}>
-                <td className="px-4 py-4 whitespace-nowrap text-sm text-center">
-                  <input
-                    type="checkbox"
-                    className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-                    checked={!!item.expanded}
-                    onChange={(e) => handleSelectHeadcount(item.id, e.target.checked)}
-                  />
-                </td>
-                <td className="px-4 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{item.name}</td>
-                <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-500">{item.id}</td>
-                <td className="px-4 py-4 whitespace-nowrap text-sm text-center text-gray-900">{item.shifts.reduce((sum, shift) => sum + shift.total, 0)}</td>
-                <td className="px-4 py-4 whitespace-nowrap text-sm text-center text-gray-900">0</td>
-                <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-500">{item.shifts[0].name}</td>
-                <td className="px-4 py-4 whitespace-nowrap text-sm">
-                  <span className={`px-3 py-1 rounded-full text-xs font-medium ${
-                    item.expanded ? 'bg-green-100 text-green-800' : 'bg-amber-100 text-amber-800'
-                  }`}>
-                    {item.expanded ? 'Aprobado' : 'Pendiente'}
-                  </span>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-
-      {/* Paginación */}
-      {totalPages > 0 && (
-        <Pagination
-          currentPage={currentPage}
-          totalPages={totalPages}
-          indexOfFirstItem={indexOfFirstItem}
-          indexOfLastItem={indexOfLastItem}
-          totalItems={filteredData.length}
-          onPageChange={setCurrentPage}
-        />
-      )}
-
-      {/* Modal de confirmación de aprobación */}
-      {showApprovalConfirm && (
-        <HeadcountApprovalModal
-          selectedItems={data.filter(item => item.expanded)}
-          onConfirm={confirmApproval}
-          onCancel={() => setShowApprovalConfirm(false)}
-        />
-      )}
-
-      {/* Formulario de headcount */}
-      {showHeadcountForm && (
-        <HeadcountForm
-          onSubmit={handleAddHeadcount}
-          onCancel={() => setShowHeadcountForm(false)}
-        />
-      )}
 
       {/* Selector de nivel de detalle */}
       <div className="mb-4 border-b pb-2">
@@ -464,207 +1233,166 @@ const HeadcountTab: React.FC<HeadcountTabProps> = ({ onSave }) => {
         </div>
       </div>
       
-      {/* Historial de aprobaciones */}
-      {showApprovalLogs && (
-        <HeadcountApprovalLog logs={approvalLogs} onClose={() => setShowApprovalLogs(false)} />
-      )}
+      {/* Vista de gráfico o tabla según selección */}
+      {viewType === 'table' ? (
+        // Vista de tabla (código existente)
+        <>
+          {/* Historial de aprobaciones */}
+          {showApprovalLogs && (
+            <HeadcountApprovalLog logs={localApprovalLogs} onClose={() => setShowApprovalLogs(false)} />
+          )}
 
-      {/* Tabla de datos */}
-      <div className="overflow-x-auto">
-        <table className="min-w-full">
-          <thead className="bg-gray-50 text-xs text-gray-500 uppercase tracking-wider">
-            <tr>
-              <th className="px-4 py-3 text-left w-1/4">Value Stream / Línea</th>
-              {activeDetailLevel === 'shift' ? (
-                <>
-                  {shifts.map(shift => (
-                    <th key={shift.id} className="px-4 py-3 text-center">{shift.name}</th>
-                  ))}
-                  <th className="px-4 py-3 text-center font-bold">Total</th>
-                </>
-              ) : (
-                <>
-                  {headcountPositions.slice(0, 5).map(position => (
-                    <th key={position.code} className="px-4 py-3 text-center" title={position.name}>
-                      {position.code}
-                    </th>
-                  ))}
-                  <th className="px-4 py-3 text-center font-bold">Total</th>
-                </>
-              )}
-            </tr>
-          </thead>
-          <tbody className="bg-white divide-y divide-gray-200">
-            {filteredDataStream.map(vst => (
-              <React.Fragment key={vst.id}>
-                {/* Fila del Value Stream */}
-                <tr className={getRowStyle(0)}>
-                  <td className="px-4 py-3 flex items-center">
-                    <button onClick={() => toggleExpand(vst.id)} className="mr-2">
-                      {vst.expanded ? 
-                        <ChevronDown className="h-4 w-4" /> : 
-                        <ChevronRight className="h-4 w-4" />
-                      }
-                    </button>
-                    {vst.name}
-                  </td>
-                  
+          {/* Tabla de datos */}
+          <div className="overflow-x-auto">
+            <table className="min-w-full">
+              <thead className="bg-gray-50 text-xs text-gray-500 uppercase tracking-wider">
+                <tr>
+                  <th className="px-4 py-3 text-left w-1/4">Value Stream / Línea</th>
                   {activeDetailLevel === 'shift' ? (
                     <>
-                      {vst.shifts.map(shift => (
-                        <td key={shift.id} className="px-4 py-3 text-center">
-                          {shift.total}
-                        </td>
+                      {shifts.map(shift => (
+                        <th key={shift.id} className="px-4 py-3 text-center">{shift.name}</th>
                       ))}
-                      <td className="px-4 py-3 text-center font-bold">{vst.shifts.reduce((sum, shift) => sum + shift.total, 0)}</td>
+                      <th className="px-4 py-3 text-center font-bold">Total</th>
                     </>
                   ) : (
                     <>
                       {headcountPositions.slice(0, 5).map(position => (
-                        <td key={position.code} className="px-4 py-3 text-center">
-                          {vst.shifts.reduce((sum, shift) => sum + (shift.positions[position.code] || 0), 0)}
-                        </td>
+                        <th key={position.code} className="px-4 py-3 text-center" title={position.name}>
+                          {position.code}
+                        </th>
                       ))}
-                      <td className="px-4 py-3 text-center font-bold">{vst.shifts.reduce((sum, shift) => sum + shift.total, 0)}</td>
+                      <th className="px-4 py-3 text-center font-bold">Total</th>
                     </>
                   )}
                 </tr>
-                
-                {/* Líneas del Value Stream (si está expandido) */}
-                {vst.expanded && vst.lines.map(line => (
-                  <React.Fragment key={`${vst.id}-${line.id}`}>
-                    <tr className={getRowStyle(1)}>
+              </thead>
+              <tbody className="bg-white divide-y divide-gray-200">
+                {filteredDataStream.map(vst => (
+                  <React.Fragment key={vst.id}>
+                    {/* Fila del Value Stream */}
+                    <tr className={getRowStyle(0)}>
                       <td className="px-4 py-3 flex items-center">
-                        {line.shifts.length > 0 && (
-                          <button onClick={() => toggleExpandLine(vst.id, line.id)} className="mr-2">
-                            {line.expanded ? 
-                              <ChevronDown className="h-4 w-4" /> : 
-                              <ChevronRight className="h-4 w-4" />
-                            }
-                          </button>
-                        )}
-                        Línea {line.name}
+                        <button onClick={() => toggleExpand(vst.id)} className="mr-2">
+                          {vst.expanded ? 
+                            <ChevronDown className="h-4 w-4" /> : 
+                            <ChevronRight className="h-4 w-4" />
+                          }
+                        </button>
+                        {vst.name}
                       </td>
                       
                       {activeDetailLevel === 'shift' ? (
                         <>
-                          {line.shifts.map(shift => (
+                          {vst.shifts.map(shift => (
                             <td key={shift.id} className="px-4 py-3 text-center">
                               {shift.total}
                             </td>
                           ))}
-                          <td className="px-4 py-3 text-center font-bold">{line.total}</td>
+                          <td className="px-4 py-3 text-center font-bold">{vst.shifts.reduce((sum, shift) => sum + shift.total, 0)}</td>
                         </>
                       ) : (
                         <>
                           {headcountPositions.slice(0, 5).map(position => (
                             <td key={position.code} className="px-4 py-3 text-center">
-                              {line.shifts.reduce((sum, shift) => sum + (shift.positions[position.code] || 0), 0)}
+                              {vst.shifts.reduce((sum, shift) => sum + (shift.positions[position.code] || 0), 0)}
                             </td>
                           ))}
-                          <td className="px-4 py-3 text-center font-bold">{line.total}</td>
+                          <td className="px-4 py-3 text-center font-bold">{vst.shifts.reduce((sum, shift) => sum + shift.total, 0)}</td>
                         </>
                       )}
                     </tr>
                     
-                    {/* Detalles de la línea por turno o posición */}
-                    {line.expanded && activeDetailLevel === 'shift' && line.shifts.map(shift => (
-                      <tr key={`${vst.id}-${line.id}-${shift.id}`} className={getRowStyle(2)}>
+                    {/* Líneas del Value Stream (si está expandido) */}
+                    {vst.expanded && vst.lines.map(line => (
+                      <tr key={`${vst.id}-${line.id}`} className={getRowStyle(1)}>
                         <td className="px-4 py-3 flex items-center">
-                          <span className="ml-6">{shift.name}</span>
+                          <span className="ml-6">Línea {line.name}</span>
                         </td>
-                        {shifts.map(s => (
-                          <td key={s.id} className="px-4 py-3 text-center">
-                            {s.id === shift.id ? shift.total : ''}
-                          </td>
-                        ))}
-                        <td className="px-4 py-3 text-center font-bold">{shift.total}</td>
+                        
+                        {activeDetailLevel === 'shift' ? (
+                          <>
+                            {line.shifts.map(shift => (
+                              <td key={shift.id} className="px-4 py-3 text-center">
+                                {shift.total}
+                              </td>
+                            ))}
+                            <td className="px-4 py-3 text-center font-bold">{line.total}</td>
+                          </>
+                        ) : (
+                          <>
+                            {headcountPositions.slice(0, 5).map(position => (
+                              <td key={position.code} className="px-4 py-3 text-center">
+                                {line.shifts.reduce((sum, shift) => sum + (shift.positions[position.code] || 0), 0)}
+                              </td>
+                            ))}
+                            <td className="px-4 py-3 text-center font-bold">{line.total}</td>
+                          </>
+                        )}
                       </tr>
                     ))}
-                    
-                    {line.expanded && activeDetailLevel === 'position' && (
-                      <tr className={getRowStyle(2)}>
-                        <td className="px-4 py-3" colSpan={7}>
-                          <div className="border rounded-lg overflow-hidden">
-                            <table className="min-w-full">
-                              <thead className="bg-gray-50 text-xs">
-                                <tr>
-                                  <th className="px-3 py-2 text-left">Posición</th>
-                                  {shifts.map(shift => (
-                                    <th key={shift.id} className="px-3 py-2 text-center">{shift.name}</th>
-                                  ))}
-                                  <th className="px-3 py-2 text-center">Total</th>
-                                </tr>
-                              </thead>
-                              <tbody>
-                                {headcountPositions.map(position => {
-                                  const total = line.shifts.reduce(
-                                    (sum, shift) => sum + (shift.positions[position.code] || 0), 
-                                    0
-                                  );
-                                  
-                                  if (total === 0) return null;
-                                  
-                                  return (
-                                    <tr key={position.code} className="border-b text-xs">
-                                      <td className="px-3 py-2">{position.name}</td>
-                                      {line.shifts.map(shift => (
-                                        <td key={shift.id} className="px-3 py-2 text-center">
-                                          {shift.positions[position.code] || 0}
-                                        </td>
-                                      ))}
-                                      <td className="px-3 py-2 text-center font-semibold">{total}</td>
-                                    </tr>
-                                  );
-                                })}
-                              </tbody>
-                            </table>
-                          </div>
-                        </td>
-                      </tr>
-                    )}
                   </React.Fragment>
                 ))}
-              </React.Fragment>
-            ))}
-            
-            {/* Fila de totales */}
-            <tr className="bg-gray-100 font-bold">
-              <td className="px-4 py-3">Total</td>
-              {activeDetailLevel === 'shift' ? (
-                <>
-                  {shifts.map(shift => {
-                    const total = data.reduce((sum, vst) => {
-                      const shiftData = vst.shifts.find(s => s.id === shift.id);
-                      return sum + (shiftData?.total || 0);
-                    }, 0);
-                    
-                    return (
-                      <td key={shift.id} className="px-4 py-3 text-center">{total}</td>
-                    );
-                  })}
-                  <td className="px-4 py-3 text-center">{totalOperators}</td>
-                </>
-              ) : (
-                <>
-                  {headcountPositions.slice(0, 5).map(position => {
-                    const total = data.reduce((sum, vst) => {
-                      return sum + vst.shifts.reduce((shiftSum, shift) => {
-                        return shiftSum + (shift.positions[position.code] || 0);
-                      }, 0);
-                    }, 0);
-                    
-                    return (
-                      <td key={position.code} className="px-4 py-3 text-center">{total}</td>
-                    );
-                  })}
-                  <td className="px-4 py-3 text-center">{totalOperators}</td>
-                </>
-              )}
-            </tr>
-          </tbody>
-        </table>
-      </div>
+                
+                {/* Fila de totales */}
+                <tr className="bg-gray-100 font-bold">
+                  <td className="px-4 py-3">Total</td>
+                  {activeDetailLevel === 'shift' ? (
+                    <>
+                      {shifts.map(shift => {
+                        const total = data.reduce((sum, vst) => {
+                          const shiftData = vst.shifts.find(s => s.id === shift.id);
+                          return sum + (shiftData?.total || 0);
+                        }, 0);
+                        
+                        return (
+                          <td key={shift.id} className="px-4 py-3 text-center">{total}</td>
+                        );
+                      })}
+                      <td className="px-4 py-3 text-center">{totalOperators}</td>
+                    </>
+                  ) : (
+                    <>
+                      {headcountPositions.slice(0, 5).map(position => {
+                        const total = data.reduce((sum, vst) => {
+                          return sum + vst.shifts.reduce((shiftSum, shift) => {
+                            return shiftSum + (shift.positions[position.code] || 0);
+                          }, 0);
+                        }, 0);
+                        
+                        return (
+                          <td key={position.code} className="px-4 py-3 text-center">{total}</td>
+                        );
+                      })}
+                      <td className="px-4 py-3 text-center">{totalOperators}</td>
+                    </>
+                  )}
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </>
+      ) : (
+        // Vista de gráfico mejorada
+        renderChart()
+      )}
+      
+      {/* Modal de confirmación de aprobación */}
+      {showApprovalConfirm && (
+        <HeadcountApprovalModal
+          selectedItems={data.filter(item => item.expanded)}
+          onConfirm={confirmApproval}
+          onCancel={() => setShowApprovalConfirm(false)}
+        />
+      )}
+
+      {/* Formulario de headcount */}
+      {showHeadcountForm && (
+        <HeadcountForm
+          onSubmit={handleAddHeadcount}
+          onCancel={() => setShowHeadcountForm(false)}
+        />
+      )}
       
       {/* Modal de aprobación */}
       {showApprovalModal && (
