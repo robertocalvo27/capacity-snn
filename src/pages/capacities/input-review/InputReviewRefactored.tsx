@@ -12,6 +12,7 @@ import BuildPlanTab from './components/BuildPlan/BuildPlanTab';
 import BuildPlanImportModal from './components/BuildPlan/BuildPlanImportModal';
 import YieldTab from './components/Yield/YieldTab';
 import DowntimesTab from './components/Downtimes/DowntimesTab';
+import HeadcountTab from './components/Headcount/HeadcountTab';
 
 // Datos mock
 import { inputReviewStatus, tabData, approvalLogs, StatusItem } from './data/mockData';
@@ -40,6 +41,10 @@ const InputReviewRefactored: React.FC = () => {
   const [lastDowntimeImportedFile, setLastDowntimeImportedFile] = useState<string | null>(null);
   const [downtimeApprovalLogs, setDowntimeApprovalLogs] = useState<any[]>(approvalLogs.downtimes || []);
   const [showDowntimeImportModal, setShowDowntimeImportModal] = useState<boolean>(false);
+
+  // Estados específicos para Headcount
+  const [headcountData, setHeadcountData] = useState<any[]>(tabData.headcount);
+  const [headcountApprovalLogs, setHeadcountApprovalLogs] = useState<any[]>([]);
 
   // Función para mostrar notificación
   const showSuccessNotification = (message: string) => {
@@ -122,6 +127,26 @@ const InputReviewRefactored: React.FC = () => {
     }
   };
 
+  // Manejadores para Headcount
+  const handleHeadcountSave = () => {
+    // Aquí iría la lógica para guardar los datos de headcount en el backend
+    showSuccessNotification('Se han aprobado correctamente los headcounts seleccionados.');
+    
+    // Actualizar estado de revisión si hay cambios aprobados
+    const anyApproved = headcountData.some(item => item.status === 'approved');
+    if (anyApproved) {
+      const updatedStatus: StatusItem = { 
+        complete: true, 
+        date: new Date().toISOString().split('T')[0] 
+      };
+      
+      setReviewStatus({
+        ...reviewStatus,
+        headcount: updatedStatus
+      });
+    }
+  };
+
   return (
     <div className="container mx-auto p-6 max-w-7xl">
       {/* Header */}
@@ -175,9 +200,13 @@ const InputReviewRefactored: React.FC = () => {
         )}
         
         {activeTab === 'headcount' && (
-          <div className="text-center py-12 text-gray-500">
-            <p>Funcionalidad de Headcount en desarrollo</p>
-          </div>
+          <HeadcountTab 
+            data={headcountData}
+            setData={setHeadcountData}
+            onSave={handleHeadcountSave}
+            approvalLogs={headcountApprovalLogs}
+            setApprovalLogs={setHeadcountApprovalLogs}
+          />
         )}
         
         {activeTab === 'runRates' && (
