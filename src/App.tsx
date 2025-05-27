@@ -17,6 +17,8 @@ import RoadsterCapacities from './pages/capacities/Roadster';
 import CapacityModelPage from './pages/capacities';
 import MonthDetail from './pages/capacities/MonthDetail';
 import VSTDetail from './pages/capacities/VSTDetail';
+import UsageRoadster from './pages/capacities/usage/UsageRoadster';
+import InputReview from './pages/capacities/input-review/InputReview';
 
 // Usuario de prueba
 const testUser: User = {
@@ -68,7 +70,9 @@ export default function App() {
           <Route path="/capacities/roadster" element={<RoadsterCapacities />} />
           <Route path="/capacities" element={<CapacityModelPage />} />
           <Route path="/capacities/:cbpId" element={<MonthDetail />} />
+          <Route path="/capacities/input-review/:cbpId" element={<InputReview />} />
           <Route path="/capacities/:cbpId/:vstId" element={<VSTDetail />} />
+          <Route path="/capacities/:cbpId/roadster/usage" element={<UsageRoadster />} />
           {DebugRoutes}
         </Routes>
       </Layout>
