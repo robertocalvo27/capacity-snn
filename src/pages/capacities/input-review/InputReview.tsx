@@ -130,6 +130,10 @@ export default function InputReview() {
   const [showDowntimeForm, setShowDowntimeForm] = useState<boolean>(false);
   const [lastDowntimeImportedFile, setLastDowntimeImportedFile] = useState<string | null>(null);
   const [isDowntimeImportModalOpen, setIsDowntimeImportModalOpen] = useState<boolean>(false);
+  const [selectAllDowntimes, setSelectAllDowntimes] = useState<boolean>(false);
+  const [showDowntimeApprovalConfirm, setShowDowntimeApprovalConfirm] = useState<boolean>(false);
+  const [downtimeApprovalLogs, setDowntimeApprovalLogs] = useState<any[]>([]);
+  const [showDowntimeApprovalLogs, setShowDowntimeApprovalLogs] = useState<boolean>(false);
   
   // Estado para el formulario de registro de downtime
   const [downtimeForm, setDowntimeForm] = useState({
@@ -141,7 +145,10 @@ export default function InputReview() {
     area: '',
     valueStream: '',
     line: '',
-    status: 'pending'
+    status: 'pending',
+    selected: false,
+    approvedBy: null,
+    approvedAt: null
   });
   
   // Estado para los datos del Build Plan
@@ -389,7 +396,10 @@ export default function InputReview() {
       area: '',
       valueStream: '',
       line: '',
-      status: 'pending'
+      status: 'pending',
+      selected: false,
+      approvedBy: null,
+      approvedAt: null
     });
   };
   
@@ -485,6 +495,89 @@ export default function InputReview() {
         }, 5000);
       }, 2000);
     }, 3000);
+  };
+
+  // Funciones para la aprobación de downtimes
+  
+  // Función para seleccionar/deseleccionar todos los downtimes
+  const handleSelectAllDowntimes = (checked: boolean) => {
+    setSelectAllDowntimes(checked);
+    setDowntimeData(prevData => 
+      prevData.map(item => ({
+        ...item,
+        selected: checked
+      }))
+    );
+  };
+
+  // Función para seleccionar/deseleccionar un downtime específico
+  const handleSelectDowntime = (id: number, checked: boolean) => {
+    setDowntimeData(prevData => 
+      prevData.map(item => 
+        item.id === id ? { ...item, selected: checked } : item
+      )
+    );
+    
+    // Verificar si todos están seleccionados para actualizar el estado del "select all"
+    const allSelected = downtimeData.every(item => item.id === id ? checked : item.selected);
+    setSelectAllDowntimes(allSelected);
+  };
+
+  // Función para aprobar los downtimes seleccionados
+  const handleApproveDowntimes = () => {
+    const selectedItems = downtimeData.filter(item => item.selected);
+    if (selectedItems.length === 0) return;
+    
+    setShowDowntimeApprovalConfirm(true);
+  };
+
+  // Función para confirmar la aprobación de downtimes
+  const confirmDowntimeApproval = () => {
+    const now = new Date();
+    const user = "Juan Pérez"; // En un caso real, vendría del contexto de autenticación
+    
+    // Crear registros de aprobación
+    const newLogs = downtimeData
+      .filter(item => item.selected)
+      .map(item => ({
+        id: Date.now() + item.id,
+        type: item.type,
+        date: item.date,
+        hours: item.hours,
+        reason: item.reason,
+        description: item.description,
+        valueStream: item.valueStream || 'N/A',
+        line: item.line || 'N/A',
+        approvedBy: user,
+        approvedAt: now.toISOString(),
+        area: item.area
+      }));
+    
+    // Actualizar los datos de downtime
+    setDowntimeData(prevData => 
+      prevData.map(item => 
+        item.selected ? { 
+          ...item, 
+          status: 'approved', 
+          selected: false,
+          approvedBy: user,
+          approvedAt: now.toISOString()
+        } : item
+      )
+    );
+    
+    // Guardar los logs
+    setDowntimeApprovalLogs(prev => [...prev, ...newLogs]);
+    
+    // Cerrar el modal y mostrar notificación
+    setShowDowntimeApprovalConfirm(false);
+    setSelectAllDowntimes(false);
+    
+    // Mostrar notificación de éxito
+    setShowNotification(true);
+    setTimeout(() => {
+      setShowNotification(false);
+    }, 5000);
   };
 
   return (
@@ -911,6 +1004,25 @@ export default function InputReview() {
                   </select>
                 </div>
 
+                {/* Botón para aprobar los downtimes seleccionados */}
+                <button
+                  className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-green-600 hover:bg-green-700 focus:outline-none disabled:bg-gray-300 disabled:cursor-not-allowed"
+                  onClick={handleApproveDowntimes}
+                  disabled={!downtimeData.some(item => item.selected)}
+                >
+                  <Check className="mr-2 h-5 w-5" />
+                  Aprobar seleccionados
+                </button>
+
+                {/* Botón para ver el log de aprobaciones */}
+                <button
+                  className="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none"
+                  onClick={() => setShowDowntimeApprovalLogs(!showDowntimeApprovalLogs)}
+                >
+                  <ClipboardList className="mr-2 h-5 w-5 text-gray-400" />
+                  Ver historial
+                </button>
+
                 {/* Botón para importar downtimes */}
                 <button 
                   className="flex items-center px-4 py-2 text-sm bg-gray-100 rounded-lg hover:bg-gray-200 text-gray-700"
@@ -1196,6 +1308,14 @@ export default function InputReview() {
                   )}
                   {activeTab === 'downtimes' && (
                     <>
+                      <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider w-12">
+                        <input
+                          type="checkbox"
+                          className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                          checked={selectAllDowntimes}
+                          onChange={(e) => handleSelectAllDowntimes(e.target.checked)}
+                        />
+                      </th>
                       <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tipo</th>
                       <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Fecha</th>
                       <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Horas</th>
@@ -1277,7 +1397,16 @@ export default function InputReview() {
                       ))
                     : activeTab === 'downtimes'
                       ? downtimeCurrentItems.map((item: any, index) => (
-                          <tr key={item.id || index} className="hover:bg-gray-50">
+                          <tr key={item.id || index} className={`hover:bg-gray-50 ${item.selected ? 'bg-blue-50' : ''}`}>
+                            <td className="px-4 py-4 whitespace-nowrap text-sm text-center">
+                              <input
+                                type="checkbox"
+                                className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                                checked={!!item.selected}
+                                onChange={(e) => handleSelectDowntime(item.id, e.target.checked)}
+                                disabled={item.status === 'approved'}
+                              />
+                            </td>
                             <td className="px-4 py-4 whitespace-nowrap text-sm font-medium">
                               <span className={`px-2 py-1 rounded-full text-xs font-medium ${
                                 item.type === 'general' 
@@ -1313,6 +1442,11 @@ export default function InputReview() {
                               }`}>
                                 {item.status === 'approved' ? 'Aprobado' : 'Pendiente'}
                               </span>
+                              {item.approvedBy && (
+                                <div className="mt-1 text-xs text-gray-500">
+                                  por {item.approvedBy}
+                                </div>
+                              )}
                             </td>
                           </tr>
                         ))
@@ -2043,6 +2177,73 @@ export default function InputReview() {
         </div>
       )}
 
+      {/* Modal de confirmación de aprobación de Downtimes */}
+      {showDowntimeApprovalConfirm && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg shadow-xl max-w-lg w-full p-6">
+            <h3 className="text-lg font-medium text-gray-900 mb-4">Confirmar aprobación de Downtimes</h3>
+            <p className="text-sm text-gray-500 mb-4">
+              Estás a punto de aprobar {downtimeData.filter(item => item.selected).length} downtimes. Esta acción quedará registrada y no puede deshacerse.
+            </p>
+
+            <div className="mb-4 max-h-48 overflow-y-auto border rounded-md p-2">
+              <table className="min-w-full divide-y divide-gray-200">
+                <thead className="bg-gray-50">
+                  <tr>
+                    <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tipo</th>
+                    <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Fecha</th>
+                    <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Motivo</th>
+                    <th className="px-3 py-2 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Horas</th>
+                  </tr>
+                </thead>
+                <tbody className="bg-white divide-y divide-gray-200">
+                  {downtimeData.filter(item => item.selected).map(item => (
+                    <tr key={item.id} className="hover:bg-gray-50">
+                      <td className="px-3 py-2 whitespace-nowrap text-xs">
+                        <span className={`px-2 py-1 rounded-full text-xs ${
+                          item.type === 'general' 
+                            ? 'bg-blue-100 text-blue-800' 
+                            : item.type === 'valueStream' 
+                              ? 'bg-purple-100 text-purple-800'
+                              : 'bg-green-100 text-green-800'
+                        }`}>
+                          {item.type === 'general' 
+                            ? 'General' 
+                            : item.type === 'valueStream' 
+                              ? 'V.Stream' 
+                              : 'Línea'
+                          }
+                        </span>
+                      </td>
+                      <td className="px-3 py-2 whitespace-nowrap text-xs text-gray-500">{item.date}</td>
+                      <td className="px-3 py-2 whitespace-nowrap text-xs font-medium text-gray-900">{item.reason}</td>
+                      <td className="px-3 py-2 whitespace-nowrap text-xs text-right text-gray-500">{item.hours}h</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            
+            <div className="flex justify-end gap-3">
+              <button
+                type="button"
+                className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50"
+                onClick={() => setShowDowntimeApprovalConfirm(false)}
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                className="px-4 py-2 text-sm font-medium text-white bg-green-600 border border-transparent rounded-md hover:bg-green-700"
+                onClick={confirmDowntimeApproval}
+              >
+                Confirmar aprobación
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Notification Alert */}
       {showNotification && (
         <div className="fixed bottom-4 right-4 bg-green-50 border border-green-200 rounded-lg shadow-lg p-4 w-80 z-50 transition-all duration-300 ease-in-out transform translate-x-0 opacity-100">
@@ -2057,7 +2258,9 @@ export default function InputReview() {
                   ? `Se ha importado correctamente el Build Plan para el CBP ${cbpId}.`
                   : activeTab === 'yield'
                     ? `Se han aprobado correctamente los yields seleccionados.`
-                    : 'Operación completada con éxito.'}
+                    : activeTab === 'downtimes'
+                      ? `Se han aprobado correctamente los downtimes seleccionados.`
+                      : 'Operación completada con éxito.'}
               </div>
             </div>
             <div className="ml-auto pl-3">
@@ -2074,6 +2277,80 @@ export default function InputReview() {
           </div>
         </div>
       )}
+
+      {/* Log de aprobaciones (expandible) */}
+      {showDowntimeApprovalLogs && (
+        <div className="p-4 bg-gray-50 rounded-lg border border-gray-200 mb-4">
+          <div className="flex justify-between items-center mb-2">
+            <h4 className="text-sm font-medium text-gray-700">Historial de aprobaciones de Downtimes</h4>
+            <button 
+              className="text-gray-400 hover:text-gray-500"
+              onClick={() => setShowDowntimeApprovalLogs(false)}
+            >
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+          
+          {downtimeApprovalLogs.length === 0 ? (
+            <p className="text-sm text-gray-500">No hay registros de aprobación.</p>
+          ) : (
+            <div className="overflow-x-auto border rounded-lg">
+              <table className="min-w-full divide-y divide-gray-200">
+                <thead className="bg-gray-50">
+                  <tr>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tipo</th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Fecha</th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Horas</th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Motivo</th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Aplicación</th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Aprobado por</th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Fecha</th>
+                  </tr>
+                </thead>
+                <tbody className="bg-white divide-y divide-gray-200">
+                  {downtimeApprovalLogs.map(log => (
+                    <tr key={log.id} className="hover:bg-gray-50">
+                      <td className="px-4 py-2 whitespace-nowrap text-sm font-medium">
+                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                          log.type === 'general' 
+                            ? 'bg-blue-100 text-blue-800' 
+                            : log.type === 'valueStream' 
+                              ? 'bg-purple-100 text-purple-800'
+                              : 'bg-green-100 text-green-800'
+                        }`}>
+                          {log.type === 'general' 
+                            ? 'General' 
+                            : log.type === 'valueStream' 
+                              ? 'Value Stream' 
+                              : 'Línea'
+                          }
+                        </span>
+                      </td>
+                      <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-500">{log.date}</td>
+                      <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-500">{log.hours}</td>
+                      <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-900">{log.reason}</td>
+                      <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-500">
+                        {log.type === 'general' 
+                          ? 'Toda la planta' 
+                          : log.type === 'valueStream' 
+                            ? log.valueStream 
+                            : `${log.valueStream} / ${log.line}`
+                        }
+                      </td>
+                      <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-500">{log.approvedBy}</td>
+                      <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-500">
+                        {new Date(log.approvedAt).toLocaleString()}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Referencia al archivo importado */}
     </div>
   );
 } 
