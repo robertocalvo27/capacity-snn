@@ -82,6 +82,49 @@ export default function VSTDetail() {
     ],
   };
 
+  // Estado para crews por semana (por defecto 1)
+  const [crewsByWeek, setCrewsByWeek] = React.useState(() =>
+    weeks.map(() => 1)
+  );
+
+  // Actualizar crews si cambia el filtro de semanas
+  React.useEffect(() => {
+    setCrewsByWeek(weeks.map(() => 1));
+  }, [selectedLine, dateFrom, dateTo]);
+
+  // Calcular total disponible según rango y crews por semana
+  const totalDisponible = weeks.reduce(
+    (acc, w, idx) => acc + (w.available * (crewsByWeek[idx] || 1)),
+    0
+  );
+
+  // Agrupar semanas por línea
+  const weeksByLine = lines.reduce((acc, line) => {
+    acc[line] = weeks.filter(w => w.linea === line);
+    return acc;
+  }, {} as Record<string, typeof weeks>);
+
+  // Calcular total disponible por línea
+  const totalDisponibleByLine = (line: string) => {
+    return (weeksByLine[line] || []).reduce((acc, w, idx) => {
+      // Buscar el índice global de la semana para crewsByWeek
+      const globalIdx = weeks.findIndex(
+        (wk) => wk.semana === w.semana && wk.linea === w.linea
+      );
+      return acc + (w.available * (crewsByWeek[globalIdx] || 1));
+    }, 0);
+  };
+
+  // Datos para el card de línea seleccionada
+  const selectedLineData = selectedLine && selectedLine !== ''
+    ? {
+        name: selectedLine,
+        days: [5, 1],
+        hours: [6.1, 4.7],
+        total: totalDisponibleByLine(selectedLine),
+      }
+    : null;
+
   return (
     <div className="space-y-8 p-8">
       {/* Header estilo index.tsx */}
@@ -210,6 +253,45 @@ export default function VSTDetail() {
         </div>
       </div>
 
+      {/* Cards resumen por línea */}
+      {(!selectedLine || selectedLine === '') ? (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+          {lines.map((line) => (
+            <div key={line} className="bg-white rounded-lg shadow p-6 flex flex-col border-l-4 border-blue-500">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-lg font-bold text-gray-900">{line}</span>
+                <span className="text-xs px-2 py-1 rounded bg-gray-100 text-gray-600">Resumen</span>
+              </div>
+              <div className="flex flex-col space-y-1 mb-2">
+                <span className="text-sm text-gray-500">Available Days/Week: <span className="font-semibold text-gray-800">5 + 1</span></span>
+                <span className="text-sm text-gray-500">Available Hours/Shift: <span className="font-semibold text-gray-800">6.1 / 4.7</span></span>
+              </div>
+              <div className="mt-2 flex items-center justify-between">
+                <span className="text-sm text-gray-600">Total Disponible:</span>
+                <span className="text-2xl font-bold text-blue-700">{totalDisponibleByLine(line).toFixed(1)}h</span>
+              </div>
+            </div>
+          ))}
+        </div>
+      ) : selectedLineData && (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+          <div className="bg-white rounded-lg shadow p-6 flex flex-col border-l-4 border-blue-500">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-lg font-bold text-gray-900">{selectedLineData.name}</span>
+              <span className="text-xs px-2 py-1 rounded bg-gray-100 text-gray-600">Resumen</span>
+            </div>
+            <div className="flex flex-col space-y-1 mb-2">
+              <span className="text-sm text-gray-500">Available Days/Week: <span className="font-semibold text-gray-800">{selectedLineData.days.join(' + ')}</span></span>
+              <span className="text-sm text-gray-500">Available Hours/Shift: <span className="font-semibold text-gray-800">{selectedLineData.hours.join(' / ')}</span></span>
+            </div>
+            <div className="mt-2 flex items-center justify-between">
+              <span className="text-sm text-gray-600">Total Disponible:</span>
+              <span className="text-2xl font-bold text-blue-700">{selectedLineData.total.toFixed(1)}h</span>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Tabla calendario semanal */}
       <div className="bg-white rounded-lg shadow-lg p-6 overflow-x-auto">
         <table className="min-w-full divide-y divide-gray-200">
@@ -219,6 +301,7 @@ export default function VSTDetail() {
               <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Fecha Inicio</th>
               <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Fecha Fin</th>
               <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Línea</th>
+              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Crews</th>
               <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Downtime (min)</th>
               <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Overtime (min)</th>
               <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Available Time (H)</th>
@@ -233,9 +316,23 @@ export default function VSTDetail() {
                 <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900">{w.inicio}</td>
                 <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900">{w.fin}</td>
                 <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900">{w.linea}</td>
+                <td className="px-4 py-3 whitespace-nowrap text-sm">
+                  <input
+                    type="number"
+                    min={1}
+                    max={3}
+                    value={crewsByWeek[(page - 1) * rowsPerPage + idx] || 1}
+                    onChange={e => {
+                      const newCrews = [...crewsByWeek];
+                      newCrews[(page - 1) * rowsPerPage + idx] = Math.max(1, Math.min(3, Number(e.target.value)));
+                      setCrewsByWeek(newCrews);
+                    }}
+                    className="w-14 px-2 py-1 border border-gray-300 rounded text-center focus:ring-blue-500 focus:border-blue-500"
+                  />
+                </td>
                 <td className="px-4 py-3 whitespace-nowrap text-sm text-red-600">{w.downtime}</td>
                 <td className="px-4 py-3 whitespace-nowrap text-sm text-blue-600">{w.overtime}</td>
-                <td className="px-4 py-3 whitespace-nowrap text-sm text-green-700">{w.available}</td>
+                <td className="px-4 py-3 whitespace-nowrap text-sm text-green-700">{(w.available * (crewsByWeek[(page - 1) * rowsPerPage + idx] || 1)).toFixed(1)}</td>
                 <td className="px-4 py-3 whitespace-nowrap text-sm text-yellow-600">{w.holidays}</td>
                 <td className="px-4 py-3 whitespace-nowrap text-sm">
                   <button
