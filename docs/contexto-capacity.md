@@ -62,6 +62,49 @@ Capacity es una herramienta desarrollada para la planta de producción de Smith 
 
 ---
 
+## Módulo de Input Review (Nuevo)
+
+- **Propósito:** Permite a los planners revisar, importar y aprobar los datos fundamentales que alimentan el modelo de capacidad: Build Plan, Headcount, Run Rates, Yield y Downtimes.
+- **Características clave:**
+  1. **Estructura modular por tabs:**
+     - Navegación intuitiva por pestañas para cada categoría de input
+     - Indicadores visuales de progreso para cada input
+     - Diseño uniforme con header profesional, sombras y estilo consistente con MonthDetail
+  
+  2. **Gestión avanzada del Build Plan:**
+     - Sistema de importación en tres pasos (selección, previsualización, importación)
+     - Visualización de progreso durante la carga de archivos Excel
+     - Previsualización tabulada de datos antes de confirmar importación
+     - Referencia visible del último archivo importado con fecha y opciones de ver/descargar
+     - Filtros avanzados por Value Stream y términos de búsqueda (PN, descripción, catálogo)
+     - Paginación para manejar grandes volúmenes de datos (3,000+ registros)
+     - Selector de cantidad de elementos por página (10, 25, 50, 100)
+
+  3. **Sistema de revisión de Yield con historial:**
+     - Visualización de datos históricos (3 meses previos) para cada producto
+     - Interfaz de edición para modificar valores del período actual
+     - Sistema de aprobación con selección individual o masiva
+     - Confirmación de aprobación con vista previa de elementos seleccionados
+     - Registro de auditoría con usuario, fecha y valores aprobados
+     - Búsqueda y filtrado avanzado específico para Yield
+     - Paginación y ordenamiento para optimizar la experiencia de usuario
+
+  4. **Características transversales:**
+     - Indicadores de estado (aprobado/pendiente) para cada registro
+     - Notificaciones contextuales para confirmación de acciones exitosas
+     - Filtros específicos adaptados a cada tipo de input
+     - Validación visual de datos inusuales o potencialmente problemáticos
+  
+- **Valor para el negocio:**
+  - Simplifica y estructura el proceso de revisión de inputs críticos
+  - Reduce errores en la entrada de datos mediante validación visual y confirmación
+  - Mejora la trazabilidad y control de aprobaciones con registro de auditoría
+  - Facilita la detección de anomalías mediante la visualización de datos históricos
+  - Optimiza el tiempo de los planners con herramientas de búsqueda y filtrado avanzadas
+  - Eleva la confiabilidad del modelo de capacidad mediante la aprobación formal de inputs
+
+---
+
 ## Módulo de Capacity Usage (Nuevo)
 
 - **Propósito:** Permite a los planners visualizar y gestionar la distribución semanal de producción por producto, analizar estadísticas históricas y proyectar semanas de inventario.
@@ -111,4 +154,25 @@ Capacity es una herramienta desarrollada para la planta de producción de Smith 
 
 ---
 
-Este documento se actualiza para reflejar el avance, la estructura lograda en la versión 1 del Capacity Model y la integración técnica/funcional del sistema, incluyendo las nuevas características del módulo de Capacity Usage. 
+## Avances y Actualizaciones
+
+### Marzo 2024 - Mejoras en el Módulo Input Review
+- Se mejoró significativamente el header de la página para alinearlo con el diseño de MonthDetail, incorporando fondo blanco, sombras y un estilo más profesional.
+- Se implementó un flujo completo de importación de Build Plan en tres pasos (selección, previsualización, confirmación) con barra de progreso y notificaciones contextuales.
+- Se añadió una referencia visible del último archivo Build Plan importado, con fecha y opciones para visualizar/descargar.
+- Se desarrolló un sistema completo de paginación para manejar grandes volúmenes de datos (hasta 3,000 registros).
+- Se incorporó búsqueda y filtrado avanzado por PN, descripción, catálogo y Value Stream.
+- Se implementó una interfaz completa para la revisión y aprobación de Yield con:
+  - Visualización de datos históricos (Oct, Nov, Dic 2023)
+  - Sistema de selección individual y masiva para aprobación
+  - Registro de auditoría con información de quién y cuándo aprobó cada valor
+  - Interfaz de edición para ajustar valores del período actual
+  - Filtros avanzados y paginación específica para Yield
+
+### Siguientes Pasos
+- Implementar las mejoras en la gestión de Downtimes
+- Desarrollar la funcionalidad de Run Rates
+- Integrar el módulo de Headcount
+- Conectar los inputs con los cálculos automáticos del modelo de capacidad
+
+Este documento se actualiza para reflejar el avance, la estructura lograda en la versión 1 del Capacity Model y la integración técnica/funcional del sistema, incluyendo las nuevas características del módulo de Capacity Usage y las mejoras recientes al módulo de Input Review. 
