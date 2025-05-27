@@ -74,4 +74,1051 @@ export const approvalLogs = {
     { id: 2001, type: 'general', date: '2024-01-01', hours: 24, reason: 'Año Nuevo', description: 'Festivo nacional', valueStream: 'N/A', line: 'N/A', approvedBy: 'María González', approvedAt: '2024-01-16T14:30:00.000Z', area: 'RRHH' },
     { id: 2002, type: 'general', date: '2024-04-18', hours: 24, reason: 'Jueves Santo', description: 'Festivo Semana Santa', valueStream: 'N/A', line: 'N/A', approvedBy: 'María González', approvedAt: '2024-01-16T14:30:00.000Z', area: 'RRHH' },
   ]
-}; 
+};
+
+// Tipos de posiciones/puestos disponibles
+export const headcountPositions = [
+  { code: 'OPER', name: 'Operario Fijo' },
+  { code: 'TMP', name: 'Operario Temporal' },
+  { code: 'LL', name: 'Line Leader' },
+  { code: 'BU', name: 'Back Up' },
+  { code: 'EQC', name: 'Equipment Clerk' },
+  { code: 'DHR', name: 'DHR Clerk' },
+  { code: 'QC', name: 'Quality Control' },
+  { code: 'MH', name: 'Material Handler' },
+  { code: 'TRG', name: 'Trainer' }
+];
+
+// Turnos disponibles
+export const shifts = [
+  { id: 1, name: 'Shift 1' },
+  { id: 2, name: 'Shift 2' },
+  { id: 3, name: 'Shift 3' }
+];
+
+// Estructura jerárquica para headcount
+export const headcountData = [
+  {
+    id: 'sportsMedicine',
+    name: 'Sports Medicine',
+    expanded: false,
+    lines: [
+      {
+        id: 1,
+        name: 'Total',
+        expanded: false,
+        shifts: [
+          {
+            id: 1,
+            name: 'Shift 1',
+            positions: {
+              'OPER': 140,
+              'TMP': 0,
+              'LL': 0,
+              'BU': 0,
+              'EQC': 0,
+              'DHR': 0,
+              'QC': 0,
+              'MH': 0,
+              'TRG': 0
+            },
+            total: 140
+          },
+          {
+            id: 2,
+            name: 'Shift 2',
+            positions: {
+              'OPER': 136,
+              'TMP': 0,
+              'LL': 0,
+              'BU': 0,
+              'EQC': 0,
+              'DHR': 0,
+              'QC': 0,
+              'MH': 0,
+              'TRG': 0
+            },
+            total: 136
+          },
+          {
+            id: 3,
+            name: 'Shift 3',
+            positions: {
+              'OPER': 0,
+              'TMP': 0,
+              'LL': 0,
+              'BU': 0,
+              'EQC': 0,
+              'DHR': 0,
+              'QC': 0,
+              'MH': 0,
+              'TRG': 0
+            },
+            total: 0
+          }
+        ],
+        total: 276
+      }
+    ],
+    shifts: [
+      {
+        id: 1,
+        name: 'Shift 1',
+        positions: {
+          'OPER': 140,
+          'TMP': 0,
+          'LL': 0,
+          'BU': 0,
+          'EQC': 0,
+          'DHR': 0,
+          'QC': 0,
+          'MH': 0,
+          'TRG': 0
+        },
+        total: 140
+      },
+      {
+        id: 2,
+        name: 'Shift 2',
+        positions: {
+          'OPER': 136,
+          'TMP': 0,
+          'LL': 0,
+          'BU': 0,
+          'EQC': 0,
+          'DHR': 0,
+          'QC': 0,
+          'MH': 0,
+          'TRG': 0
+        },
+        total: 136
+      },
+      {
+        id: 3,
+        name: 'Shift 3',
+        positions: {
+          'OPER': 0,
+          'TMP': 0,
+          'LL': 0,
+          'BU': 0,
+          'EQC': 0,
+          'DHR': 0,
+          'QC': 0,
+          'MH': 0,
+          'TRG': 0
+        },
+        total: 0
+      }
+    ],
+    total: 276
+  },
+  {
+    id: 'ent',
+    name: 'ENT',
+    expanded: true,
+    lines: [
+      {
+        id: 1,
+        name: '6',
+        expanded: false,
+        shifts: [
+          {
+            id: 1,
+            name: 'Shift 1',
+            positions: {
+              'OPER': 42,
+              'TMP': 0,
+              'LL': 0,
+              'BU': 0,
+              'EQC': 0,
+              'DHR': 0,
+              'QC': 0,
+              'MH': 0,
+              'TRG': 0
+            },
+            total: 42
+          },
+          {
+            id: 2,
+            name: 'Shift 2',
+            positions: {
+              'OPER': 35,
+              'TMP': 0,
+              'LL': 0,
+              'BU': 0,
+              'EQC': 0,
+              'DHR': 0,
+              'QC': 0,
+              'MH': 0,
+              'TRG': 0
+            },
+            total: 35
+          },
+          {
+            id: 3,
+            name: 'Shift 3',
+            positions: {
+              'OPER': 0,
+              'TMP': 0,
+              'LL': 0,
+              'BU': 0,
+              'EQC': 0,
+              'DHR': 0,
+              'QC': 0,
+              'MH': 0,
+              'TRG': 0
+            },
+            total: 0
+          }
+        ],
+        total: 77
+      },
+      {
+        id: 2,
+        name: '7',
+        expanded: false,
+        shifts: [
+          {
+            id: 1,
+            name: 'Shift 1',
+            positions: {
+              'OPER': 41,
+              'TMP': 0,
+              'LL': 0,
+              'BU': 0,
+              'EQC': 0,
+              'DHR': 0,
+              'QC': 0,
+              'MH': 0,
+              'TRG': 0
+            },
+            total: 41
+          },
+          {
+            id: 2,
+            name: 'Shift 2',
+            positions: {
+              'OPER': 38,
+              'TMP': 0,
+              'LL': 0,
+              'BU': 0,
+              'EQC': 0,
+              'DHR': 0,
+              'QC': 0,
+              'MH': 0,
+              'TRG': 0
+            },
+            total: 38
+          },
+          {
+            id: 3,
+            name: 'Shift 3',
+            positions: {
+              'OPER': 0,
+              'TMP': 0,
+              'LL': 0,
+              'BU': 0,
+              'EQC': 0,
+              'DHR': 0,
+              'QC': 0,
+              'MH': 0,
+              'TRG': 0
+            },
+            total: 0
+          }
+        ],
+        total: 79
+      },
+      {
+        id: 3,
+        name: '10,11',
+        expanded: false,
+        shifts: [
+          {
+            id: 1,
+            name: 'Shift 1',
+            positions: {
+              'OPER': 19,
+              'TMP': 0,
+              'LL': 0,
+              'BU': 0,
+              'EQC': 0,
+              'DHR': 0,
+              'QC': 0,
+              'MH': 0,
+              'TRG': 0
+            },
+            total: 19
+          },
+          {
+            id: 2,
+            name: 'Shift 2',
+            positions: {
+              'OPER': 25,
+              'TMP': 0,
+              'LL': 0,
+              'BU': 0,
+              'EQC': 0,
+              'DHR': 0,
+              'QC': 0,
+              'MH': 0,
+              'TRG': 0
+            },
+            total: 25
+          },
+          {
+            id: 3,
+            name: 'Shift 3',
+            positions: {
+              'OPER': 0,
+              'TMP': 0,
+              'LL': 0,
+              'BU': 0,
+              'EQC': 0,
+              'DHR': 0,
+              'QC': 0,
+              'MH': 0,
+              'TRG': 0
+            },
+            total: 0
+          }
+        ],
+        total: 44
+      },
+      {
+        id: 4,
+        name: 'Total',
+        expanded: false,
+        shifts: [
+          {
+            id: 1,
+            name: 'Shift 1',
+            positions: {
+              'OPER': 102,
+              'TMP': 0,
+              'LL': 0,
+              'BU': 0,
+              'EQC': 0,
+              'DHR': 0,
+              'QC': 0,
+              'MH': 0,
+              'TRG': 0
+            },
+            total: 102
+          },
+          {
+            id: 2,
+            name: 'Shift 2',
+            positions: {
+              'OPER': 98,
+              'TMP': 0,
+              'LL': 0,
+              'BU': 0,
+              'EQC': 0,
+              'DHR': 0,
+              'QC': 0,
+              'MH': 0,
+              'TRG': 0
+            },
+            total: 98
+          },
+          {
+            id: 3,
+            name: 'Shift 3',
+            positions: {
+              'OPER': 0,
+              'TMP': 0,
+              'LL': 0,
+              'BU': 0,
+              'EQC': 0,
+              'DHR': 0,
+              'QC': 0,
+              'MH': 0,
+              'TRG': 0
+            },
+            total: 0
+          }
+        ],
+        total: 200
+      }
+    ],
+    shifts: [
+      {
+        id: 1,
+        name: 'Shift 1',
+        positions: {
+          'OPER': 102,
+          'TMP': 0,
+          'LL': 0,
+          'BU': 0,
+          'EQC': 0,
+          'DHR': 0,
+          'QC': 0,
+          'MH': 0,
+          'TRG': 0
+        },
+        total: 102
+      },
+      {
+        id: 2,
+        name: 'Shift 2',
+        positions: {
+          'OPER': 98,
+          'TMP': 0,
+          'LL': 0,
+          'BU': 0,
+          'EQC': 0,
+          'DHR': 0,
+          'QC': 0,
+          'MH': 0,
+          'TRG': 0
+        },
+        total: 98
+      },
+      {
+        id: 3,
+        name: 'Shift 3',
+        positions: {
+          'OPER': 0,
+          'TMP': 0,
+          'LL': 0,
+          'BU': 0,
+          'EQC': 0,
+          'DHR': 0,
+          'QC': 0,
+          'MH': 0,
+          'TRG': 0
+        },
+        total: 0
+      }
+    ],
+    total: 200
+  },
+  {
+    id: 'jointRepair',
+    name: 'Joint Repair',
+    expanded: false,
+    lines: [
+      {
+        id: 1,
+        name: 'Total',
+        expanded: false,
+        shifts: [
+          {
+            id: 1,
+            name: 'Shift 1',
+            positions: {
+              'OPER': 51,
+              'TMP': 0,
+              'LL': 0,
+              'BU': 0,
+              'EQC': 0,
+              'DHR': 0,
+              'QC': 0,
+              'MH': 0,
+              'TRG': 0
+            },
+            total: 51
+          },
+          {
+            id: 2,
+            name: 'Shift 2',
+            positions: {
+              'OPER': 51,
+              'TMP': 0,
+              'LL': 0,
+              'BU': 0,
+              'EQC': 0,
+              'DHR': 0,
+              'QC': 0,
+              'MH': 0,
+              'TRG': 0
+            },
+            total: 51
+          },
+          {
+            id: 3,
+            name: 'Shift 3',
+            positions: {
+              'OPER': 0,
+              'TMP': 0,
+              'LL': 0,
+              'BU': 0,
+              'EQC': 0,
+              'DHR': 0,
+              'QC': 0,
+              'MH': 0,
+              'TRG': 0
+            },
+            total: 0
+          }
+        ],
+        total: 102
+      }
+    ],
+    shifts: [
+      {
+        id: 1,
+        name: 'Shift 1',
+        positions: {
+          'OPER': 51,
+          'TMP': 0,
+          'LL': 0,
+          'BU': 0,
+          'EQC': 0,
+          'DHR': 0,
+          'QC': 0,
+          'MH': 0,
+          'TRG': 0
+        },
+        total: 51
+      },
+      {
+        id: 2,
+        name: 'Shift 2',
+        positions: {
+          'OPER': 51,
+          'TMP': 0,
+          'LL': 0,
+          'BU': 0,
+          'EQC': 0,
+          'DHR': 0,
+          'QC': 0,
+          'MH': 0,
+          'TRG': 0
+        },
+        total: 51
+      },
+      {
+        id: 3,
+        name: 'Shift 3',
+        positions: {
+          'OPER': 0,
+          'TMP': 0,
+          'LL': 0,
+          'BU': 0,
+          'EQC': 0,
+          'DHR': 0,
+          'QC': 0,
+          'MH': 0,
+          'TRG': 0
+        },
+        total: 0
+      }
+    ],
+    total: 102
+  },
+  {
+    id: 'regenetenFS',
+    name: 'Regeneten & FS',
+    expanded: false,
+    lines: [
+      {
+        id: 1,
+        name: 'Total',
+        expanded: false,
+        shifts: [
+          {
+            id: 1,
+            name: 'Shift 1',
+            positions: {
+              'OPER': 87,
+              'TMP': 0,
+              'LL': 0,
+              'BU': 0,
+              'EQC': 0,
+              'DHR': 0,
+              'QC': 0,
+              'MH': 0,
+              'TRG': 0
+            },
+            total: 87
+          },
+          {
+            id: 2,
+            name: 'Shift 2',
+            positions: {
+              'OPER': 49,
+              'TMP': 0,
+              'LL': 0,
+              'BU': 0,
+              'EQC': 0,
+              'DHR': 0,
+              'QC': 0,
+              'MH': 0,
+              'TRG': 0
+            },
+            total: 49
+          },
+          {
+            id: 3,
+            name: 'Shift 3',
+            positions: {
+              'OPER': 0,
+              'TMP': 0,
+              'LL': 0,
+              'BU': 0,
+              'EQC': 0,
+              'DHR': 0,
+              'QC': 0,
+              'MH': 0,
+              'TRG': 0
+            },
+            total: 0
+          }
+        ],
+        total: 136
+      }
+    ],
+    shifts: [
+      {
+        id: 1,
+        name: 'Shift 1',
+        positions: {
+          'OPER': 87,
+          'TMP': 0,
+          'LL': 0,
+          'BU': 0,
+          'EQC': 0,
+          'DHR': 0,
+          'QC': 0,
+          'MH': 0,
+          'TRG': 0
+        },
+        total: 87
+      },
+      {
+        id: 2,
+        name: 'Shift 2',
+        positions: {
+          'OPER': 49,
+          'TMP': 0,
+          'LL': 0,
+          'BU': 0,
+          'EQC': 0,
+          'DHR': 0,
+          'QC': 0,
+          'MH': 0,
+          'TRG': 0
+        },
+        total: 49
+      },
+      {
+        id: 3,
+        name: 'Shift 3',
+        positions: {
+          'OPER': 0,
+          'TMP': 0,
+          'LL': 0,
+          'BU': 0,
+          'EQC': 0,
+          'DHR': 0,
+          'QC': 0,
+          'MH': 0,
+          'TRG': 0
+        },
+        total: 0
+      }
+    ],
+    total: 136
+  },
+  {
+    id: 'externalAreas',
+    name: 'External Areas',
+    expanded: false,
+    lines: [
+      {
+        id: 1,
+        name: 'Total',
+        expanded: false,
+        shifts: [
+          {
+            id: 1,
+            name: 'Shift 1',
+            positions: {
+              'OPER': 108,
+              'TMP': 0,
+              'LL': 0,
+              'BU': 0,
+              'EQC': 0,
+              'DHR': 0,
+              'QC': 0,
+              'MH': 0,
+              'TRG': 0
+            },
+            total: 108
+          },
+          {
+            id: 2,
+            name: 'Shift 2',
+            positions: {
+              'OPER': 62,
+              'TMP': 0,
+              'LL': 0,
+              'BU': 0,
+              'EQC': 0,
+              'DHR': 0,
+              'QC': 0,
+              'MH': 0,
+              'TRG': 0
+            },
+            total: 62
+          },
+          {
+            id: 3,
+            name: 'Shift 3',
+            positions: {
+              'OPER': 0,
+              'TMP': 0,
+              'LL': 0,
+              'BU': 0,
+              'EQC': 0,
+              'DHR': 0,
+              'QC': 0,
+              'MH': 0,
+              'TRG': 0
+            },
+            total: 0
+          }
+        ],
+        total: 170
+      }
+    ],
+    shifts: [
+      {
+        id: 1,
+        name: 'Shift 1',
+        positions: {
+          'OPER': 108,
+          'TMP': 0,
+          'LL': 0,
+          'BU': 0,
+          'EQC': 0,
+          'DHR': 0,
+          'QC': 0,
+          'MH': 0,
+          'TRG': 0
+        },
+        total: 108
+      },
+      {
+        id: 2,
+        name: 'Shift 2',
+        positions: {
+          'OPER': 62,
+          'TMP': 0,
+          'LL': 0,
+          'BU': 0,
+          'EQC': 0,
+          'DHR': 0,
+          'QC': 0,
+          'MH': 0,
+          'TRG': 0
+        },
+        total: 62
+      },
+      {
+        id: 3,
+        name: 'Shift 3',
+        positions: {
+          'OPER': 0,
+          'TMP': 0,
+          'LL': 0,
+          'BU': 0,
+          'EQC': 0,
+          'DHR': 0,
+          'QC': 0,
+          'MH': 0,
+          'TRG': 0
+        },
+        total: 0
+      }
+    ],
+    total: 170
+  },
+  {
+    id: 'wound',
+    name: 'Wound',
+    expanded: false,
+    lines: [
+      {
+        id: 1,
+        name: 'Total',
+        expanded: false,
+        shifts: [
+          {
+            id: 1,
+            name: 'Shift 1',
+            positions: {
+              'OPER': 30,
+              'TMP': 0,
+              'LL': 0,
+              'BU': 0,
+              'EQC': 0,
+              'DHR': 0,
+              'QC': 0,
+              'MH': 0,
+              'TRG': 0
+            },
+            total: 30
+          },
+          {
+            id: 2,
+            name: 'Shift 2',
+            positions: {
+              'OPER': 10,
+              'TMP': 0,
+              'LL': 0,
+              'BU': 0,
+              'EQC': 0,
+              'DHR': 0,
+              'QC': 0,
+              'MH': 0,
+              'TRG': 0
+            },
+            total: 10
+          },
+          {
+            id: 3,
+            name: 'Shift 3',
+            positions: {
+              'OPER': 0,
+              'TMP': 0,
+              'LL': 0,
+              'BU': 0,
+              'EQC': 0,
+              'DHR': 0,
+              'QC': 0,
+              'MH': 0,
+              'TRG': 0
+            },
+            total: 0
+          }
+        ],
+        total: 40
+      }
+    ],
+    shifts: [
+      {
+        id: 1,
+        name: 'Shift 1',
+        positions: {
+          'OPER': 30,
+          'TMP': 0,
+          'LL': 0,
+          'BU': 0,
+          'EQC': 0,
+          'DHR': 0,
+          'QC': 0,
+          'MH': 0,
+          'TRG': 0
+        },
+        total: 30
+      },
+      {
+        id: 2,
+        name: 'Shift 2',
+        positions: {
+          'OPER': 10,
+          'TMP': 0,
+          'LL': 0,
+          'BU': 0,
+          'EQC': 0,
+          'DHR': 0,
+          'QC': 0,
+          'MH': 0,
+          'TRG': 0
+        },
+        total: 10
+      },
+      {
+        id: 3,
+        name: 'Shift 3',
+        positions: {
+          'OPER': 0,
+          'TMP': 0,
+          'LL': 0,
+          'BU': 0,
+          'EQC': 0,
+          'DHR': 0,
+          'QC': 0,
+          'MH': 0,
+          'TRG': 0
+        },
+        total: 0
+      }
+    ],
+    total: 40
+  },
+  {
+    id: 'apollo',
+    name: 'Apollo',
+    expanded: false,
+    lines: [
+      {
+        id: 1,
+        name: 'Total',
+        expanded: false,
+        shifts: [
+          {
+            id: 1,
+            name: 'Shift 1',
+            positions: {
+              'OPER': 7,
+              'TMP': 0,
+              'LL': 0,
+              'BU': 0,
+              'EQC': 0,
+              'DHR': 0,
+              'QC': 0,
+              'MH': 0,
+              'TRG': 0
+            },
+            total: 7
+          },
+          {
+            id: 2,
+            name: 'Shift 2',
+            positions: {
+              'OPER': 7,
+              'TMP': 0,
+              'LL': 0,
+              'BU': 0,
+              'EQC': 0,
+              'DHR': 0,
+              'QC': 0,
+              'MH': 0,
+              'TRG': 0
+            },
+            total: 7
+          },
+          {
+            id: 3,
+            name: 'Shift 3',
+            positions: {
+              'OPER': 6,
+              'TMP': 0,
+              'LL': 0,
+              'BU': 0,
+              'EQC': 0,
+              'DHR': 0,
+              'QC': 0,
+              'MH': 0,
+              'TRG': 0
+            },
+            total: 6
+          }
+        ],
+        total: 20
+      }
+    ],
+    shifts: [
+      {
+        id: 1,
+        name: 'Shift 1',
+        positions: {
+          'OPER': 7,
+          'TMP': 0,
+          'LL': 0,
+          'BU': 0,
+          'EQC': 0,
+          'DHR': 0,
+          'QC': 0,
+          'MH': 0,
+          'TRG': 0
+        },
+        total: 7
+      },
+      {
+        id: 2,
+        name: 'Shift 2',
+        positions: {
+          'OPER': 7,
+          'TMP': 0,
+          'LL': 0,
+          'BU': 0,
+          'EQC': 0,
+          'DHR': 0,
+          'QC': 0,
+          'MH': 0,
+          'TRG': 0
+        },
+        total: 7
+      },
+      {
+        id: 3,
+        name: 'Shift 3',
+        positions: {
+          'OPER': 6,
+          'TMP': 0,
+          'LL': 0,
+          'BU': 0,
+          'EQC': 0,
+          'DHR': 0,
+          'QC': 0,
+          'MH': 0,
+          'TRG': 0
+        },
+        total: 6
+      }
+    ],
+    total: 20
+  },
+  {
+    id: 'totalSite',
+    name: 'Total Site Operators',
+    expanded: false,
+    lines: [],
+    shifts: [
+      {
+        id: 1,
+        name: 'Shift 1',
+        positions: {
+          'OPER': 525,
+          'TMP': 0,
+          'LL': 0,
+          'BU': 0,
+          'EQC': 0,
+          'DHR': 0,
+          'QC': 0,
+          'MH': 0,
+          'TRG': 0
+        },
+        total: 525
+      },
+      {
+        id: 2,
+        name: 'Shift 2',
+        positions: {
+          'OPER': 413,
+          'TMP': 0,
+          'LL': 0,
+          'BU': 0,
+          'EQC': 0,
+          'DHR': 0,
+          'QC': 0,
+          'MH': 0,
+          'TRG': 0
+        },
+        total: 413
+      },
+      {
+        id: 3,
+        name: 'Shift 3',
+        positions: {
+          'OPER': 6,
+          'TMP': 0,
+          'LL': 0,
+          'BU': 0,
+          'EQC': 0,
+          'DHR': 0,
+          'QC': 0,
+          'MH': 0,
+          'TRG': 0
+        },
+        total: 6
+      }
+    ],
+    total: 944
+  }
+]; 
