@@ -1,5 +1,14 @@
 # Plan de Implementación Frontend
 
+## Estado Actual (Versión 1)
+- Navegación estructurada: Capacity Model > CBP mensual > VST > Calendario y detalle semanal.
+- Inputs clave implementados: calendario semanal, downtimes, holidays, horas disponibles, días hábiles.
+- Filtros avanzados: Value Stream, línea de producción, rango de fechas.
+- Visualización de KPIs principales en cards estandarizados.
+- Tabla semanal con paginado, interlineado mejorado y columna de observaciones.
+- Modal de observaciones con tabs para downtimes y holidays, mostrando detalles clave (nombre, detalle, tiempo, área que aprueba, aprobado).
+- UI moderna, consistente y orientada a la experiencia del planner.
+
 ## Objetivo
 Desarrollar la interfaz y lógica de usuario para el sistema Capacity, permitiendo a planners y managers gestionar el proceso mensual de compromiso de producción, desde la carga de inputs hasta la consolidación y visualización de resultados.
 
@@ -75,4 +84,13 @@ Desarrollar la interfaz y lógica de usuario para el sistema Capacity, permitien
 
 ---
 
-Este plan servirá como guía para el desarrollo frontend del sistema Capacity, asegurando un avance ordenado y alineado con los objetivos del proyecto. 
+## Próximos pasos sugeridos
+- Integrar datos reales desde backend/Supabase.
+- Permitir edición/admin de observaciones para usuarios autorizados.
+- Agregar visualizaciones gráficas y reportes exportables.
+- Mejorar la gestión de inputs adicionales (Run Rates, Yield, Head Count, etc.).
+- Pruebas de usuario y ajustes de UX según feedback.
+
+---
+
+Este plan se actualiza para reflejar el avance y la estructura lograda en la versión 1 del Capacity Model. 

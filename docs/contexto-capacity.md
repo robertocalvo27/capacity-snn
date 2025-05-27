@@ -3,6 +3,16 @@
 ## ¿Qué es Capacity?
 Capacity es una herramienta desarrollada para la planta de producción de Smith & Nephew en Costa Rica, cuyo objetivo principal es facilitar el proceso mensual de planificación y compromiso de producción hacia el corporativo en Estados Unidos. El sistema permite a los planners y gerentes de planeamiento organizar, calcular y consolidar la capacidad productiva de la planta, asegurando que los compromisos enviados sean realistas y alineados con los recursos disponibles.
 
+## Avance Actual (Versión 1)
+- Se ha implementado la primera versión del Capacity Model en el frontend.
+- Incluye inputs clave: calendario semanal, downtimes, holidays, horas disponibles, días hábiles.
+- Filtros avanzados: por Value Stream, línea de producción y rango de fechas.
+- Visualización de KPIs principales en cards estandarizados.
+- Tabla semanal con paginado, interlineado mejorado y columna de observaciones.
+- Modal de observaciones con tabs para downtimes y holidays, mostrando detalles clave (nombre, detalle, tiempo, área que aprueba, aprobado).
+- UI moderna, consistente y orientada a la experiencia del planner.
+- Navegación estructurada: Capacity Model > CBP mensual > VST > Calendario y detalle semanal.
+
 ## Proceso Mensual de Capacity
 
 1. **Recepción de Demanda (Build Plan)**
@@ -62,4 +72,4 @@ Capacity es una herramienta desarrollada para la planta de producción de Smith 
 
 ---
 
-Este documento servirá como base para el desarrollo de los componentes clave del sistema y para la documentación técnica y funcional del proyecto Capacity SNN. 
+Este documento se actualiza para reflejar el avance y la estructura lograda en la versión 1 del Capacity Model. 
