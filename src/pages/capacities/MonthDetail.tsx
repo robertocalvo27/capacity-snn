@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ChevronDown, ChevronUp, Eye, Calendar, ClipboardCheck, Users, Sliders, BarChart3, FileCheck } from 'lucide-react';
+import { ChevronDown, ChevronUp, Eye, Calendar, ClipboardCheck, Users, Sliders, BarChart3, FileCheck, BarChart2 } from 'lucide-react';
 
 const mockVSTs = [
   {
@@ -10,6 +10,7 @@ const mockVSTs = [
     meta: 20296,
     eficiencia: 117.68,
     detalles: 'Eficiencia Real',
+    estado: 'Activo'
   },
   {
     id: 'sports-medicine',
@@ -18,6 +19,7 @@ const mockVSTs = [
     meta: 100518,
     eficiencia: 121.39,
     detalles: 'Eficiencia META Vol/MIX',
+    estado: 'Activo'
   },
   {
     id: 'wound',
@@ -26,6 +28,7 @@ const mockVSTs = [
     meta: 25503,
     eficiencia: 106.98,
     detalles: 'Eficiencia REAL VOL/MIX',
+    estado: 'Pendiente'
   },
 ];
 
@@ -45,7 +48,19 @@ export default function CapacityMonthDetail() {
 
   return (
     <div className="space-y-6 p-8">
-      <h2 className="text-2xl font-bold mb-6">Detalle del CBP mensual ({cbpId})</h2>
+      {/* Header mejorado al estilo de index.tsx */}
+      <div className="bg-white rounded-lg shadow-lg p-6">
+        <div className="flex justify-between items-center">
+          <div>
+            <h1 className="text-2xl font-bold text-gray-900 flex items-center">
+              <BarChart2 className="w-7 h-7 text-blue-600 mr-2" />
+              Detalle del CBP mensual ({cbpId})
+            </h1>
+            <p className="text-gray-500">Revisión y gestión de los inputs y capacidades del CBP</p>
+          </div>
+        </div>
+      </div>
+      
       <div className="space-y-4">
         {/* Nueva Card de Input Review */}
         <div className="bg-white rounded-lg shadow-lg border-l-4 border-blue-500">
@@ -190,7 +205,7 @@ export default function CapacityMonthDetail() {
           )}
         </div>
         
-        {/* Cards de Value Streams */}
+        {/* Cards de Value Streams - Cambiado para mostrar estado en lugar de unidades */}
         {mockVSTs.map((vst) => (
           <div key={vst.id} className="bg-white rounded-lg shadow-lg border-l-4 border-green-500">
             <div className="flex justify-between items-center p-6 cursor-pointer" onClick={() => setExpanded(expanded === vst.id ? null : vst.id)}>
@@ -200,7 +215,11 @@ export default function CapacityMonthDetail() {
               </div>
               <div className="flex items-center space-x-4">
                 <div className="text-right">
-                  <div className="text-sm text-gray-500">{vst.produccion.toLocaleString()} / {vst.meta.toLocaleString()} unidades</div>
+                  <div className="text-sm text-gray-500">
+                    Estado: <span className={`font-semibold ${vst.estado === 'Activo' ? 'text-green-600' : 'text-amber-600'}`}>
+                      {vst.estado}
+                    </span>
+                  </div>
                   <div className="text-green-700 font-bold">{vst.eficiencia}%</div>
                 </div>
                 {expanded === vst.id ? (
@@ -214,7 +233,10 @@ export default function CapacityMonthDetail() {
               <div className="p-6 border-t border-gray-100 bg-gray-50">
                 <div className="flex justify-between items-center">
                   <div>
-                    <p className="text-sm text-gray-700">Aquí puedes mostrar más detalles, KPIs, gráficos o acciones para el Value Stream <span className="font-semibold">{vst.name}</span>.</p>
+                    <p className="text-sm text-gray-700 mb-2">Value Stream <span className="font-semibold">{vst.name}</span></p>
+                    <div className="text-sm text-gray-700">
+                      <span className="font-medium">Producción:</span> {vst.produccion.toLocaleString()} / {vst.meta.toLocaleString()} unidades
+                    </div>
                   </div>
                   <div className="flex space-x-2">
                     {vst.id === 'roadster' && (
