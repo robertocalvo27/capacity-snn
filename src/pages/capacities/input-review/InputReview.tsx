@@ -79,10 +79,12 @@ const tabData = {
     { id: 25, catalog: 'R_126_330014', pn: '6647T', description: 'LOCKING PLATE', oct2023: 97.9, nov2023: 98.1, dec2023: 98.3, yield: 98.3, month: 'Enero', status: 'pending', valueStream: 'Sports Medicine', selected: false, approvedBy: null, approvedAt: null },
   ],
   downtimes: [
-    { id: 1, line: 'FA', date: '2024-01-01', hours: 8, reason: 'Holiday - Año Nuevo', status: 'pending' },
-    { id: 2, line: 'Next', date: '2024-01-01', hours: 8, reason: 'Holiday - Año Nuevo', status: 'pending' },
-    { id: 3, line: 'CER3', date: '2024-01-01', hours: 8, reason: 'Holiday - Año Nuevo', status: 'pending' },
-    { id: 4, line: 'FA', date: '2024-01-15', hours: 4, reason: 'Mantenimiento Preventivo', status: 'pending' },
+    { id: 1, type: 'general', date: '2024-01-01', hours: 8, reason: 'Holiday - Año Nuevo', description: 'Día feriado nacional', area: 'RRHH', status: 'approved' },
+    { id: 2, type: 'general', date: '2024-01-15', hours: 4, reason: 'Capacitación HSE', description: 'Seguridad basada en comportamientos', area: 'HSE', status: 'approved' },
+    { id: 3, type: 'general', date: '2024-01-22', hours: 2, reason: 'Auditoría interna', description: 'Revisión de procesos', area: 'Calidad', status: 'approved' },
+    { id: 4, type: 'line', date: '2024-01-10', hours: 2, reason: 'Mantenimiento Preventivo', description: 'Ajuste de equipos', line: 'FA', valueStream: 'Roadster', area: 'Mantenimiento', status: 'approved' },
+    { id: 5, type: 'line', date: '2024-01-17', hours: 3, reason: 'Capacitación específica', description: 'Nuevo proceso de ensamblaje', line: 'Next', valueStream: 'Sports Medicine', area: 'Producción', status: 'pending' },
+    { id: 6, type: 'valueStream', date: '2024-01-24', hours: 4, reason: 'Reunión de equipo', description: 'Revisión de metas mensuales', valueStream: 'Wound', area: 'Gerencia', status: 'pending' },
   ]
 };
 
@@ -116,6 +118,31 @@ export default function InputReview() {
   const [showApprovalConfirm, setShowApprovalConfirm] = useState<boolean>(false);
   const [approvalLogs, setApprovalLogs] = useState<any[]>([]);
   const [showApprovalLogs, setShowApprovalLogs] = useState<boolean>(false);
+  
+  // Estados específicos para Downtimes
+  const [downtimeData, setDowntimeData] = useState<any[]>(tabData.downtimes);
+  const [downtimeSearchTerm, setDowntimeSearchTerm] = useState<string>('');
+  const [downtimeValueStream, setDowntimeValueStream] = useState<string>('all');
+  const [downtimeType, setDowntimeType] = useState<string>('all');
+  const [downtimeShowFilters, setDowntimeShowFilters] = useState<boolean>(false);
+  const [downtimeCurrentPage, setDowntimeCurrentPage] = useState<number>(1);
+  const [downtimeItemsPerPage, setDowntimeItemsPerPage] = useState<number>(10);
+  const [showDowntimeForm, setShowDowntimeForm] = useState<boolean>(false);
+  const [lastDowntimeImportedFile, setLastDowntimeImportedFile] = useState<string | null>(null);
+  const [isDowntimeImportModalOpen, setIsDowntimeImportModalOpen] = useState<boolean>(false);
+  
+  // Estado para el formulario de registro de downtime
+  const [downtimeForm, setDowntimeForm] = useState({
+    type: 'general',
+    date: new Date().toISOString().split('T')[0],
+    hours: 0,
+    reason: '',
+    description: '',
+    area: '',
+    valueStream: '',
+    line: '',
+    status: 'pending'
+  });
   
   // Estado para los datos del Build Plan
   const [buildPlanData, setBuildPlanData] = useState(tabData.buildPlan);
@@ -339,6 +366,126 @@ export default function InputReview() {
   const yieldIndexOfLastItem = yieldCurrentPage * yieldItemsPerPage;
   const yieldIndexOfFirstItem = yieldIndexOfLastItem - yieldItemsPerPage;
   const yieldCurrentItems = filteredYieldData.slice(yieldIndexOfFirstItem, yieldIndexOfLastItem);
+
+  // Funciones para la pestaña de Downtimes
+  
+  // Manejar cambios en el formulario de downtime
+  const handleDowntimeFormChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
+    const { name, value } = e.target;
+    setDowntimeForm(prev => ({
+      ...prev,
+      [name]: name === 'hours' ? Number(value) : value
+    }));
+  };
+  
+  // Resetear el formulario de downtime
+  const resetDowntimeForm = () => {
+    setDowntimeForm({
+      type: 'general',
+      date: new Date().toISOString().split('T')[0],
+      hours: 0,
+      reason: '',
+      description: '',
+      area: '',
+      valueStream: '',
+      line: '',
+      status: 'pending'
+    });
+  };
+  
+  // Enviar el formulario de downtime
+  const handleDowntimeSubmit = () => {
+    // Validación simple
+    if (!downtimeForm.date || !downtimeForm.reason || downtimeForm.hours <= 0) {
+      // En un caso real, mostraríamos un mensaje de error
+      return;
+    }
+    
+    // Crear nuevo downtime
+    const newDowntime = {
+      id: Date.now(),
+      ...downtimeForm
+    };
+    
+    // Añadir a la lista
+    setDowntimeData(prev => [newDowntime, ...prev]);
+    
+    // Cerrar formulario y reset
+    setShowDowntimeForm(false);
+    resetDowntimeForm();
+    
+    // Mostrar notificación
+    setShowNotification(true);
+    setTimeout(() => {
+      setShowNotification(false);
+    }, 5000);
+  };
+  
+  // Filtrado de datos para Downtimes
+  const filteredDowntimeData = downtimeData
+    .filter(item => {
+      // Filtrar por término de búsqueda (razón o descripción)
+      const matchesSearch = downtimeSearchTerm === '' || 
+        item.reason.toLowerCase().includes(downtimeSearchTerm.toLowerCase()) ||
+        (item.description && item.description.toLowerCase().includes(downtimeSearchTerm.toLowerCase()));
+      
+      // Filtrar por Value Stream (si aplica)
+      const matchesValueStream = downtimeValueStream === 'all' || 
+        (item.valueStream && item.valueStream.toLowerCase() === downtimeValueStream.toLowerCase());
+      
+      // Filtrar por tipo
+      const matchesType = downtimeType === 'all' || item.type === downtimeType;
+      
+      return matchesSearch && matchesValueStream && matchesType;
+    });
+
+  // Paginación para Downtimes
+  const downtimeTotalPages = Math.ceil(filteredDowntimeData.length / downtimeItemsPerPage);
+  const downtimeIndexOfLastItem = downtimeCurrentPage * downtimeItemsPerPage;
+  const downtimeIndexOfFirstItem = downtimeIndexOfLastItem - downtimeItemsPerPage;
+  const downtimeCurrentItems = filteredDowntimeData.slice(downtimeIndexOfFirstItem, downtimeIndexOfLastItem);
+  
+  // Función para abrir el modal de importación de downtimes
+  const openDowntimeImportModal = () => {
+    setIsDowntimeImportModalOpen(true);
+  };
+  
+  // Función para procesar archivo de downtimes (similar a buildplan)
+  const handleDowntimeFileImport = () => {
+    // Simulamos un proceso de importación
+    setIsImporting(true);
+    
+    setTimeout(() => {
+      // Simulamos nuevos downtimes
+      const mockImportedDowntimes = [
+        { id: Date.now() + 1, type: 'general', date: '2024-02-01', hours: 8, reason: 'Holiday - Día de la Independencia', description: 'Día feriado nacional', area: 'RRHH', status: 'pending' },
+        { id: Date.now() + 2, type: 'line', date: '2024-02-05', hours: 3, reason: 'Capacitación técnica', description: 'Nuevo proceso de ensamblaje', line: 'FA', valueStream: 'Roadster', area: 'Producción', status: 'pending' },
+      ];
+      
+      // Añadir al estado
+      setDowntimeData(prev => [...mockImportedDowntimes, ...prev]);
+      
+      // Guardar referencia del archivo
+      if (selectedFile) {
+        setLastDowntimeImportedFile(selectedFile.name);
+      }
+      
+      // Completar proceso
+      setIsImporting(false);
+      setImportSuccess(true);
+      
+      setTimeout(() => {
+        setIsDowntimeImportModalOpen(false);
+        setImportStep(1);
+        setSelectedFile(null);
+        setShowNotification(true);
+        
+        setTimeout(() => {
+          setShowNotification(false);
+        }, 5000);
+      }, 2000);
+    }, 3000);
+  };
 
   return (
     <div className="space-y-6 p-8">
@@ -715,6 +862,282 @@ export default function InputReview() {
             </div>
           )}
 
+          {/* Controles de búsqueda/filtro y registro para Downtimes */}
+          {activeTab === 'downtimes' && (
+            <div className="mb-6">
+              {/* Opciones superiores */}
+              <div className="flex flex-col md:flex-row gap-4 mb-4">
+                {/* Buscador */}
+                <div className="relative flex-grow">
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <Search className="h-5 w-5 text-gray-400" />
+                  </div>
+                  <input
+                    type="text"
+                    className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md leading-5 bg-white placeholder-gray-500 focus:outline-none focus:placeholder-gray-400 focus:ring-1 focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                    placeholder="Buscar por motivo o descripción..."
+                    value={downtimeSearchTerm}
+                    onChange={(e) => {
+                      setDowntimeSearchTerm(e.target.value);
+                      setDowntimeCurrentPage(1); // Reset to first page on search
+                    }}
+                  />
+                </div>
+
+                {/* Botón para mostrar/ocultar filtros avanzados */}
+                <button
+                  className="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none"
+                  onClick={() => setDowntimeShowFilters(!downtimeShowFilters)}
+                >
+                  <Filter className="mr-2 h-5 w-5 text-gray-400" />
+                  Filtros avanzados
+                </button>
+
+                {/* Items por página */}
+                <div className="flex items-center">
+                  <span className="text-sm text-gray-500 mr-2">Mostrar:</span>
+                  <select
+                    value={downtimeItemsPerPage}
+                    onChange={(e) => {
+                      setDowntimeItemsPerPage(Number(e.target.value));
+                      setDowntimeCurrentPage(1); // Reset to first page when changing items per page
+                    }}
+                    className="border border-gray-300 rounded-md text-sm py-1 pl-2 pr-8 bg-white focus:outline-none focus:ring-1 focus:ring-blue-500"
+                  >
+                    <option value="10">10</option>
+                    <option value="25">25</option>
+                    <option value="50">50</option>
+                    <option value="100">100</option>
+                  </select>
+                </div>
+
+                {/* Botón para importar downtimes */}
+                <button 
+                  className="flex items-center px-4 py-2 text-sm bg-gray-100 rounded-lg hover:bg-gray-200 text-gray-700"
+                  onClick={openDowntimeImportModal}
+                >
+                  <Upload className="w-4 h-4 mr-2" /> Importar Downtimes
+                </button>
+
+                {/* Botón para registrar un nuevo downtime */}
+                <button 
+                  className="flex items-center px-4 py-2 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                  onClick={() => setShowDowntimeForm(true)}
+                >
+                  <FileInput className="w-4 h-4 mr-2" /> Registrar Downtime
+                </button>
+              </div>
+
+              {/* Referencia al archivo importado */}
+              {lastDowntimeImportedFile && (
+                <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg flex items-center justify-between">
+                  <div className="flex items-center">
+                    <FileText className="w-5 h-5 text-blue-600 mr-2" />
+                    <div>
+                      <p className="text-sm font-medium text-blue-800">Archivo importado: {lastDowntimeImportedFile}</p>
+                      <p className="text-xs text-blue-600">Importado el {new Date().toLocaleDateString()}</p>
+                    </div>
+                  </div>
+                  <div className="flex space-x-2">
+                    <button className="p-1 text-blue-600 hover:text-blue-800 rounded-full hover:bg-blue-100">
+                      <Eye className="w-4 h-4" />
+                    </button>
+                    <button className="p-1 text-blue-600 hover:text-blue-800 rounded-full hover:bg-blue-100">
+                      <Download className="w-4 h-4" />
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {/* Filtros avanzados (expandibles) */}
+              {downtimeShowFilters && (
+                <div className="p-4 bg-gray-50 rounded-lg border border-gray-200 mb-4">
+                  <h4 className="text-sm font-medium text-gray-700 mb-3">Filtros avanzados</h4>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Tipo</label>
+                      <select
+                        value={downtimeType}
+                        onChange={(e) => {
+                          setDowntimeType(e.target.value);
+                          setDowntimeCurrentPage(1); // Reset to first page on filter change
+                        }}
+                        className="block w-full border border-gray-300 rounded-md py-2 px-3 text-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                      >
+                        <option value="all">Todos</option>
+                        <option value="general">General</option>
+                        <option value="valueStream">Value Stream</option>
+                        <option value="line">Línea</option>
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Value Stream</label>
+                      <select
+                        value={downtimeValueStream}
+                        onChange={(e) => {
+                          setDowntimeValueStream(e.target.value);
+                          setDowntimeCurrentPage(1); // Reset to first page on filter change
+                        }}
+                        className="block w-full border border-gray-300 rounded-md py-2 px-3 text-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                      >
+                        <option value="all">Todos</option>
+                        {valueStreams.map(vs => (
+                          <option key={vs.id} value={vs.id}>{vs.name}</option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Formulario de registro de downtime */}
+              {showDowntimeForm && (
+                <div className="mb-6 p-4 bg-white border border-gray-200 rounded-lg shadow-sm">
+                  <div className="flex justify-between items-center mb-4">
+                    <h3 className="text-lg font-medium text-gray-900">Registrar Downtime</h3>
+                    <button 
+                      className="text-gray-400 hover:text-gray-500"
+                      onClick={() => {
+                        setShowDowntimeForm(false);
+                        resetDowntimeForm();
+                      }}
+                    >
+                      <X className="w-5 h-5" />
+                    </button>
+                  </div>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Tipo de Downtime</label>
+                      <select
+                        name="type"
+                        value={downtimeForm.type}
+                        onChange={handleDowntimeFormChange}
+                        className="block w-full border border-gray-300 rounded-md py-2 px-3 text-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                      >
+                        <option value="general">General</option>
+                        <option value="valueStream">Value Stream</option>
+                        <option value="line">Línea</option>
+                      </select>
+                    </div>
+                    
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Fecha</label>
+                      <input
+                        type="date"
+                        name="date"
+                        value={downtimeForm.date}
+                        onChange={handleDowntimeFormChange}
+                        className="block w-full border border-gray-300 rounded-md py-2 px-3 text-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                      />
+                    </div>
+                    
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Horas</label>
+                      <input
+                        type="number"
+                        name="hours"
+                        min="0"
+                        step="0.5"
+                        value={downtimeForm.hours}
+                        onChange={handleDowntimeFormChange}
+                        className="block w-full border border-gray-300 rounded-md py-2 px-3 text-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                      />
+                    </div>
+                    
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Área responsable</label>
+                      <input
+                        type="text"
+                        name="area"
+                        value={downtimeForm.area}
+                        onChange={handleDowntimeFormChange}
+                        placeholder="Ej: RRHH, Producción, HSE, etc."
+                        className="block w-full border border-gray-300 rounded-md py-2 px-3 text-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                      />
+                    </div>
+                    
+                    {(downtimeForm.type === 'valueStream' || downtimeForm.type === 'line') && (
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Value Stream</label>
+                        <select
+                          name="valueStream"
+                          value={downtimeForm.valueStream}
+                          onChange={handleDowntimeFormChange}
+                          className="block w-full border border-gray-300 rounded-md py-2 px-3 text-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                        >
+                          <option value="">Seleccione...</option>
+                          {valueStreams.map(vs => (
+                            <option key={vs.id} value={vs.name}>{vs.name}</option>
+                          ))}
+                        </select>
+                      </div>
+                    )}
+                    
+                    {downtimeForm.type === 'line' && (
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Línea</label>
+                        <input
+                          type="text"
+                          name="line"
+                          value={downtimeForm.line}
+                          onChange={handleDowntimeFormChange}
+                          placeholder="Ej: FA, Next, CER3, etc."
+                          className="block w-full border border-gray-300 rounded-md py-2 px-3 text-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                        />
+                      </div>
+                    )}
+                    
+                    <div className="md:col-span-2">
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Motivo</label>
+                      <input
+                        type="text"
+                        name="reason"
+                        value={downtimeForm.reason}
+                        onChange={handleDowntimeFormChange}
+                        placeholder="Ej: Capacitación, Mantenimiento, Festivo, etc."
+                        className="block w-full border border-gray-300 rounded-md py-2 px-3 text-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                      />
+                    </div>
+                    
+                    <div className="md:col-span-2">
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Descripción</label>
+                      <textarea
+                        name="description"
+                        value={downtimeForm.description}
+                        onChange={handleDowntimeFormChange}
+                        rows={3}
+                        placeholder="Descripción detallada del downtime..."
+                        className="block w-full border border-gray-300 rounded-md py-2 px-3 text-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                      />
+                    </div>
+                  </div>
+                  
+                  <div className="flex justify-end space-x-3">
+                    <button
+                      type="button"
+                      className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md shadow-sm hover:bg-gray-50 focus:outline-none"
+                      onClick={() => {
+                        setShowDowntimeForm(false);
+                        resetDowntimeForm();
+                      }}
+                    >
+                      Cancelar
+                    </button>
+                    <button
+                      type="button"
+                      className="px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-md shadow-sm hover:bg-blue-700 focus:outline-none"
+                      onClick={handleDowntimeSubmit}
+                    >
+                      Guardar
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
           {/* Tabla dinámica según la tab activa */}
           <div className="overflow-x-auto border rounded-lg">
             <table className="min-w-full divide-y divide-gray-200">
@@ -773,11 +1196,14 @@ export default function InputReview() {
                   )}
                   {activeTab === 'downtimes' && (
                     <>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Línea</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Fecha</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Horas</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Motivo</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Estado</th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tipo</th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Fecha</th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Horas</th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Motivo</th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Descripción</th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Aplicación</th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Área</th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Estado</th>
                     </>
                   )}
                 </tr>
@@ -849,56 +1275,97 @@ export default function InputReview() {
                           </td>
                         </tr>
                       ))
-                    : tabData[activeTab as keyof typeof tabData].map((item: any) => (
-                        <tr key={item.id} className="hover:bg-gray-50">
-                          {activeTab === 'headcount' && (
-                            <>
-                              <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{item.line}</td>
-                              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{item.operators}</td>
-                              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{item.supervisors}</td>
-                              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{item.month}</td>
-                              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                <span className={`px-3 py-1 rounded-full text-xs font-medium ${
-                                  item.status === 'approved' ? 'bg-green-100 text-green-800' : 'bg-amber-100 text-amber-800'
-                                }`}>
-                                  {item.status === 'approved' ? 'Aprobado' : 'Pendiente'}
-                                </span>
-                              </td>
-                            </>
-                          )}
-                          {activeTab === 'runRates' && (
-                            <>
-                              <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{item.pn}</td>
-                              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{item.line}</td>
-                              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{item.rate}</td>
-                              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{item.uom}</td>
-                              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{item.month}</td>
-                              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                <span className={`px-3 py-1 rounded-full text-xs font-medium ${
-                                  item.status === 'approved' ? 'bg-green-100 text-green-800' : 'bg-amber-100 text-amber-800'
-                                }`}>
-                                  {item.status === 'approved' ? 'Aprobado' : 'Pendiente'}
-                                </span>
-                              </td>
-                            </>
-                          )}
-                          {activeTab === 'downtimes' && (
-                            <>
-                              <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{item.line}</td>
-                              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{item.date}</td>
-                              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{item.hours}</td>
-                              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{item.reason}</td>
-                              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                <span className={`px-3 py-1 rounded-full text-xs font-medium ${
-                                  item.status === 'approved' ? 'bg-green-100 text-green-800' : 'bg-amber-100 text-amber-800'
-                                }`}>
-                                  {item.status === 'approved' ? 'Aprobado' : 'Pendiente'}
-                                </span>
-                              </td>
-                            </>
-                          )}
-                        </tr>
-                      ))}
+                    : activeTab === 'downtimes'
+                      ? downtimeCurrentItems.map((item: any, index) => (
+                          <tr key={item.id || index} className="hover:bg-gray-50">
+                            <td className="px-4 py-4 whitespace-nowrap text-sm font-medium">
+                              <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                                item.type === 'general' 
+                                  ? 'bg-blue-100 text-blue-800' 
+                                  : item.type === 'valueStream' 
+                                    ? 'bg-purple-100 text-purple-800'
+                                    : 'bg-green-100 text-green-800'
+                              }`}>
+                                {item.type === 'general' 
+                                  ? 'General' 
+                                  : item.type === 'valueStream' 
+                                    ? 'Value Stream' 
+                                    : 'Línea'
+                                }
+                              </span>
+                            </td>
+                            <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-500">{item.date}</td>
+                            <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-500">{item.hours}</td>
+                            <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-900">{item.reason}</td>
+                            <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-500">{item.description}</td>
+                            <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-500">
+                              {item.type === 'general' 
+                                ? 'Toda la planta' 
+                                : item.type === 'valueStream' 
+                                  ? item.valueStream 
+                                  : `${item.valueStream} / ${item.line}`
+                              }
+                            </td>
+                            <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-500">{item.area}</td>
+                            <td className="px-4 py-4 whitespace-nowrap text-sm">
+                              <span className={`px-3 py-1 rounded-full text-xs font-medium ${
+                                item.status === 'approved' ? 'bg-green-100 text-green-800' : 'bg-amber-100 text-amber-800'
+                              }`}>
+                                {item.status === 'approved' ? 'Aprobado' : 'Pendiente'}
+                              </span>
+                            </td>
+                          </tr>
+                        ))
+                      : tabData[activeTab as keyof typeof tabData].map((item: any) => (
+                          <tr key={item.id} className="hover:bg-gray-50">
+                            {activeTab === 'headcount' && (
+                              <>
+                                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{item.line}</td>
+                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{item.operators}</td>
+                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{item.supervisors}</td>
+                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{item.month}</td>
+                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                  <span className={`px-3 py-1 rounded-full text-xs font-medium ${
+                                    item.status === 'approved' ? 'bg-green-100 text-green-800' : 'bg-amber-100 text-amber-800'
+                                  }`}>
+                                    {item.status === 'approved' ? 'Aprobado' : 'Pendiente'}
+                                  </span>
+                                </td>
+                              </>
+                            )}
+                            {activeTab === 'runRates' && (
+                              <>
+                                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{item.pn}</td>
+                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{item.line}</td>
+                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{item.rate}</td>
+                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{item.uom}</td>
+                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{item.month}</td>
+                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                  <span className={`px-3 py-1 rounded-full text-xs font-medium ${
+                                    item.status === 'approved' ? 'bg-green-100 text-green-800' : 'bg-amber-100 text-amber-800'
+                                  }`}>
+                                    {item.status === 'approved' ? 'Aprobado' : 'Pendiente'}
+                                  </span>
+                                </td>
+                              </>
+                            )}
+                            {activeTab === 'downtimes' && (
+                              <>
+                                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{item.line}</td>
+                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{item.date}</td>
+                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{item.hours}</td>
+                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{item.reason}</td>
+                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                  <span className={`px-3 py-1 rounded-full text-xs font-medium ${
+                                    item.status === 'approved' ? 'bg-green-100 text-green-800' : 'bg-amber-100 text-amber-800'
+                                  }`}>
+                                    {item.status === 'approved' ? 'Aprobado' : 'Pendiente'}
+                                  </span>
+                                </td>
+                              </>
+                            )}
+                          </tr>
+                        ))}
               </tbody>
             </table>
           </div>
@@ -1108,6 +1575,109 @@ export default function InputReview() {
               </div>
             </div>
           )}
+
+          {/* Paginación para Downtimes */}
+          {activeTab === 'downtimes' && downtimeTotalPages > 0 && (
+            <div className="flex items-center justify-between border-t border-gray-200 bg-white px-4 py-3 sm:px-6 mt-4">
+              <div className="flex flex-1 justify-between sm:hidden">
+                <button
+                  onClick={() => setDowntimeCurrentPage(prev => Math.max(prev - 1, 1))}
+                  disabled={downtimeCurrentPage === 1}
+                  className={`relative inline-flex items-center rounded-md border px-4 py-2 text-sm font-medium ${
+                    downtimeCurrentPage === 1
+                      ? 'border-gray-300 bg-white text-gray-300 cursor-not-allowed'
+                      : 'border-gray-300 bg-white text-gray-700 hover:bg-gray-50'
+                  }`}
+                >
+                  Anterior
+                </button>
+                <button
+                  onClick={() => setDowntimeCurrentPage(prev => Math.min(prev + 1, downtimeTotalPages))}
+                  disabled={downtimeCurrentPage === downtimeTotalPages}
+                  className={`relative ml-3 inline-flex items-center rounded-md border px-4 py-2 text-sm font-medium ${
+                    downtimeCurrentPage === downtimeTotalPages
+                      ? 'border-gray-300 bg-white text-gray-300 cursor-not-allowed'
+                      : 'border-gray-300 bg-white text-gray-700 hover:bg-gray-50'
+                  }`}
+                >
+                  Siguiente
+                </button>
+              </div>
+              <div className="hidden sm:flex sm:flex-1 sm:items-center sm:justify-between">
+                <div>
+                  <p className="text-sm text-gray-700">
+                    Mostrando <span className="font-medium">{downtimeIndexOfFirstItem + 1}</span> a{' '}
+                    <span className="font-medium">
+                      {Math.min(downtimeIndexOfLastItem, filteredDowntimeData.length)}
+                    </span>{' '}
+                    de <span className="font-medium">{filteredDowntimeData.length}</span> resultados
+                  </p>
+                </div>
+                <div>
+                  <nav className="isolate inline-flex -space-x-px rounded-md shadow-sm" aria-label="Pagination">
+                    <button
+                      onClick={() => setDowntimeCurrentPage(prev => Math.max(prev - 1, 1))}
+                      disabled={downtimeCurrentPage === 1}
+                      className={`relative inline-flex items-center rounded-l-md px-2 py-2 ${
+                        downtimeCurrentPage === 1
+                          ? 'text-gray-300 cursor-not-allowed'
+                          : 'text-gray-500 hover:bg-gray-50'
+                      }`}
+                    >
+                      <span className="sr-only">Anterior</span>
+                      <ChevronLeft className="h-5 w-5" aria-hidden="true" />
+                    </button>
+                    
+                    {/* Páginas numeradas */}
+                    {Array.from({ length: Math.min(5, downtimeTotalPages) }).map((_, i) => {
+                      // Mostrar páginas alrededor de la página actual
+                      let pageNum = 0;
+                      if (downtimeTotalPages <= 5) {
+                        // Si hay 5 o menos páginas, mostrar todas
+                        pageNum = i + 1;
+                      } else if (downtimeCurrentPage <= 3) {
+                        // Si estamos en las primeras páginas
+                        pageNum = i + 1;
+                      } else if (downtimeCurrentPage >= downtimeTotalPages - 2) {
+                        // Si estamos en las últimas páginas
+                        pageNum = downtimeTotalPages - 4 + i;
+                      } else {
+                        // Estamos en el medio, mostrar la página actual en el centro
+                        pageNum = downtimeCurrentPage - 2 + i;
+                      }
+                      
+                      return (
+                        <button
+                          key={pageNum}
+                          onClick={() => setDowntimeCurrentPage(pageNum)}
+                          className={`relative inline-flex items-center px-4 py-2 text-sm font-semibold ${
+                            downtimeCurrentPage === pageNum
+                              ? 'bg-blue-600 text-white'
+                              : 'text-gray-900 hover:bg-gray-50'
+                          }`}
+                        >
+                          {pageNum}
+                        </button>
+                      );
+                    })}
+                    
+                    <button
+                      onClick={() => setDowntimeCurrentPage(prev => Math.min(prev + 1, downtimeTotalPages))}
+                      disabled={downtimeCurrentPage === downtimeTotalPages}
+                      className={`relative inline-flex items-center rounded-r-md px-2 py-2 ${
+                        downtimeCurrentPage === downtimeTotalPages
+                          ? 'text-gray-300 cursor-not-allowed'
+                          : 'text-gray-500 hover:bg-gray-50'
+                      }`}
+                    >
+                      <span className="sr-only">Siguiente</span>
+                      <ChevronRight className="h-5 w-5" aria-hidden="true" />
+                    </button>
+                  </nav>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       </div>
 
@@ -1251,6 +1821,169 @@ export default function InputReview() {
                   type="button"
                   className="px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-md hover:bg-blue-700"
                   onClick={handleImportFile}
+                >
+                  Importar datos
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Downtime Import Modal */}
+      {isDowntimeImportModalOpen && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg shadow-xl max-w-3xl w-full max-h-[90vh] overflow-hidden">
+            <div className="flex justify-between items-center border-b border-gray-200 p-4">
+              <h3 className="text-lg font-medium text-gray-900">
+                {importStep === 1 && 'Importar Downtimes'}
+                {importStep === 2 && 'Previsualización de datos'}
+                {importStep === 3 && (isImporting ? 'Importando datos...' : 'Importación completada')}
+              </h3>
+              <button 
+                onClick={() => {
+                  setIsDowntimeImportModalOpen(false);
+                  setImportStep(1);
+                  setSelectedFile(null);
+                }}
+                className="text-gray-400 hover:text-gray-500"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            
+            <div className="p-6">
+              {/* Step 1: File Upload */}
+              {importStep === 1 && (
+                <div className="text-center">
+                  <div className="mb-6">
+                    <div className="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-blue-100">
+                      <FileText className="h-6 w-6 text-blue-600" />
+                    </div>
+                    <h3 className="mt-2 text-sm font-medium text-gray-900">Selecciona un archivo</h3>
+                    <p className="mt-1 text-sm text-gray-500">
+                      Selecciona el archivo Excel con los datos de Downtimes
+                    </p>
+                  </div>
+                  
+                  <div 
+                    className="mt-4 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 border-dashed rounded-md cursor-pointer hover:border-blue-500"
+                    onClick={() => fileInputRef.current?.click()}
+                  >
+                    <div className="space-y-1 text-center">
+                      <File className="mx-auto h-12 w-12 text-gray-400" />
+                      <div className="flex text-sm text-gray-600">
+                        <label
+                          htmlFor="file-upload"
+                          className="relative cursor-pointer bg-white rounded-md font-medium text-blue-600 hover:text-blue-500"
+                        >
+                          <span>Seleccionar archivo</span>
+                          <input
+                            ref={fileInputRef}
+                            id="file-upload"
+                            name="file-upload"
+                            type="file"
+                            className="sr-only"
+                            accept=".xlsx,.xls"
+                            onChange={handleFileChange}
+                          />
+                        </label>
+                        <p className="pl-1">o arrastra y suelta</p>
+                      </div>
+                      <p className="text-xs text-gray-500">XLSX o XLS hasta 10MB</p>
+                    </div>
+                  </div>
+                </div>
+              )}
+              
+              {/* Step 2: Data Preview */}
+              {importStep === 2 && (
+                <div>
+                  <div className="mb-4">
+                    <div className="flex items-center">
+                      <FileText className="w-5 h-5 text-blue-600 mr-2" />
+                      <span className="text-sm font-medium">{selectedFile?.name}</span>
+                    </div>
+                    <p className="mt-1 text-sm text-gray-500">
+                      Revisa los datos antes de importar. Se importarán {previewData.length} registros.
+                    </p>
+                  </div>
+                  
+                  <div className="mt-4 border rounded-lg overflow-hidden">
+                    <table className="min-w-full divide-y divide-gray-200">
+                      <thead className="bg-gray-50">
+                        <tr>
+                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Tipo</th>
+                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Fecha</th>
+                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Horas</th>
+                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Motivo</th>
+                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Aplicación</th>
+                        </tr>
+                      </thead>
+                      <tbody className="bg-white divide-y divide-gray-200">
+                        {/* Datos de ejemplo para la previsualización */}
+                        <tr className="bg-white">
+                          <td className="px-4 py-2 text-sm text-gray-500">General</td>
+                          <td className="px-4 py-2 text-sm text-gray-500">2024-02-01</td>
+                          <td className="px-4 py-2 text-sm text-gray-500">8</td>
+                          <td className="px-4 py-2 text-sm font-medium text-gray-900">Holiday - Día de la Independencia</td>
+                          <td className="px-4 py-2 text-sm text-gray-500">Toda la planta</td>
+                        </tr>
+                        <tr className="bg-gray-50">
+                          <td className="px-4 py-2 text-sm text-gray-500">Línea</td>
+                          <td className="px-4 py-2 text-sm text-gray-500">2024-02-05</td>
+                          <td className="px-4 py-2 text-sm text-gray-500">3</td>
+                          <td className="px-4 py-2 text-sm font-medium text-gray-900">Capacitación técnica</td>
+                          <td className="px-4 py-2 text-sm text-gray-500">Roadster / FA</td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              )}
+              
+              {/* Step 3: Importing/Completed */}
+              {importStep === 3 && (
+                <div className="text-center py-8">
+                  {isImporting ? (
+                    <>
+                      <Loader2 className="w-12 h-12 text-blue-600 mx-auto animate-spin" />
+                      <h3 className="mt-4 text-lg font-medium text-gray-900">Importando datos</h3>
+                      <p className="mt-1 text-sm text-gray-500">
+                        Por favor espera mientras procesamos tu archivo...
+                      </p>
+                    </>
+                  ) : (
+                    <>
+                      <CheckCircle2 className="w-12 h-12 text-green-600 mx-auto" />
+                      <h3 className="mt-4 text-lg font-medium text-gray-900">Importación exitosa</h3>
+                      <p className="mt-1 text-sm text-gray-500">
+                        Se han importado los downtimes correctamente.
+                      </p>
+                    </>
+                  )}
+                </div>
+              )}
+            </div>
+            
+            <div className="flex justify-end gap-3 border-t border-gray-200 px-4 py-3 bg-gray-50">
+              <button
+                type="button"
+                className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50"
+                onClick={() => {
+                  setIsDowntimeImportModalOpen(false);
+                  setImportStep(1);
+                  setSelectedFile(null);
+                }}
+              >
+                Cancelar
+              </button>
+              
+              {importStep === 2 && (
+                <button
+                  type="button"
+                  className="px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-md hover:bg-blue-700"
+                  onClick={handleDowntimeFileImport}
                 >
                   Importar datos
                 </button>
