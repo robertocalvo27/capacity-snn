@@ -16,14 +16,14 @@ interface BuildPlanItem {
 }
 
 interface BuildPlanTabProps {
-  data: BuildPlanItem[];
+  data?: BuildPlanItem[];
   onImport: () => void;
   onSave: () => void;
   lastImportedFile: string | null;
 }
 
 const BuildPlanTab: React.FC<BuildPlanTabProps> = ({
-  data,
+  data = [],
   onImport,
   onSave,
   lastImportedFile
