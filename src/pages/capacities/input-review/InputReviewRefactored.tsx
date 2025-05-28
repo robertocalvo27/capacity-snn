@@ -150,14 +150,20 @@ const InputReviewRefactored: React.FC = () => {
       case 'buildPlan':
         return (
           <BuildPlanTab
+            data={buildPlanData}
             onSave={handleBuildPlanSave}
             onImport={() => setShowBuildPlanImportModal(true)}
+            lastImportedFile={lastBuildPlanImportedFile}
           />
         );
       case 'yield':
         return (
           <YieldTab
+            data={yieldData}
+            setData={setYieldData}
             onSave={handleYieldSave}
+            approvalLogs={yieldApprovalLogs}
+            setApprovalLogs={setYieldApprovalLogs}
           />
         );
       case 'downtimes':
@@ -166,6 +172,10 @@ const InputReviewRefactored: React.FC = () => {
             data={downtimeData}
             setData={setDowntimeData}
             onSave={handleDowntimeSave}
+            onImport={handleDowntimeImport}
+            approvalLogs={downtimeApprovalLogs}
+            setApprovalLogs={setDowntimeApprovalLogs}
+            lastImportedFile={lastDowntimeImportedFile}
           />
         );
       case 'headcount':
