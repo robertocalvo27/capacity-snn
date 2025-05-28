@@ -13,6 +13,7 @@ import BuildPlanImportModal from './components/BuildPlan/BuildPlanImportModal';
 import YieldTab from './components/Yield/YieldTab';
 import DowntimesTab from './components/Downtimes/DowntimesTab';
 import HeadcountTab from './components/Headcount/HeadcountTab';
+import SummaryTab from './components/Summary/SummaryTab';
 
 // Datos mock
 import { inputReviewStatus, tabData, approvalLogs, StatusItem } from './data/mockData';
@@ -144,6 +145,22 @@ const InputReviewRefactored: React.FC = () => {
     });
   };
 
+  // Manejadores para Summary
+  const handleSummarySave = () => {
+    showSuccessNotification('Se ha aprobado el resumen de capacidad.');
+    
+    // Actualizar estado de revisión para summary
+    const updatedStatus: StatusItem = { 
+      complete: true, 
+      date: new Date().toISOString().split('T')[0] 
+    };
+    
+    setReviewStatus({
+      ...reviewStatus,
+      summary: updatedStatus
+    });
+  };
+
   // Renderizar la pestaña activa
   const renderActiveTab = () => {
     switch (activeTab) {
@@ -186,6 +203,18 @@ const InputReviewRefactored: React.FC = () => {
         );
       case 'runRates':
         return <div>Contenido de Run Rates (pendiente)</div>;
+      case 'summary':
+        return (
+          <SummaryTab
+            buildPlanData={buildPlanData}
+            headcountData={headcountData}
+            downtimesData={downtimeData}
+            runRatesData={tabData.runRates}
+            yieldData={yieldData}
+            onSave={handleSummarySave}
+            cbpId={cbpId}
+          />
+        );
       default:
         return <div>Selecciona una pestaña</div>;
     }
