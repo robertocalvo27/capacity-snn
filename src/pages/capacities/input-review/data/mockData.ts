@@ -17,7 +17,8 @@ export const inputReviewStatus: Record<string, StatusItem> = {
   headcount: { complete: true, date: '2024-01-16' },
   runRates: { complete: false, date: null },
   yield: { complete: true, date: '2024-01-16' },
-  downtimes: { complete: false, date: null }
+  downtimes: { complete: false, date: null },
+  summary: { complete: false, date: null }
 };
 
 // Mock de datos para cada tab
