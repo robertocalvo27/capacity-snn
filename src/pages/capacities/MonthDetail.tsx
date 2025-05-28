@@ -494,8 +494,8 @@ export default function CapacityMonthDetail() {
                 
                 <div className="flex justify-end mt-4">
                   <button 
-                    className="px-4 py-2 bg-gray-400 text-white rounded-lg cursor-not-allowed"
-                    disabled
+                    className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700"
+                    onClick={() => navigate(`/capacities/${cbpId}/cbp-summary`)}
                   >
                     Ver Resumen
                   </button>
