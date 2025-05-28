@@ -12,6 +12,7 @@ import BuildPlanTab from './components/BuildPlan/BuildPlanTab';
 import BuildPlanImportModal from './components/BuildPlan/BuildPlanImportModal';
 import YieldTab from './components/Yield/YieldTab';
 import DowntimesTab from './components/Downtimes/DowntimesTab';
+import HeadcountTab from './components/Headcount/HeadcountTab';
 
 // Datos mock
 import { inputReviewStatus, tabData, approvalLogs, StatusItem } from './data/mockData';
@@ -40,6 +41,10 @@ const InputReviewRefactored: React.FC = () => {
   const [lastDowntimeImportedFile, setLastDowntimeImportedFile] = useState<string | null>(null);
   const [downtimeApprovalLogs, setDowntimeApprovalLogs] = useState<any[]>(approvalLogs.downtimes || []);
   const [showDowntimeImportModal, setShowDowntimeImportModal] = useState<boolean>(false);
+
+  // Estados específicos para Headcount
+  const [headcountData, setHeadcountData] = useState<any[]>(tabData.headcount);
+  const [headcountApprovalLogs, setHeadcountApprovalLogs] = useState<any[]>([]);
 
   // Función para mostrar notificación
   const showSuccessNotification = (message: string) => {
@@ -72,8 +77,8 @@ const InputReviewRefactored: React.FC = () => {
   };
 
   const handleBuildPlanSave = () => {
-    // Aquí iría la lógica para guardar el build plan en el backend
-    showSuccessNotification('Los datos del Build Plan se han guardado correctamente.');
+    // Aquí iría la lógica para guardar los datos de buildPlan en el backend
+    showSuccessNotification('Se ha guardado correctamente el plan de construcción.');
   };
 
   // Manejadores para Yield
@@ -122,6 +127,60 @@ const InputReviewRefactored: React.FC = () => {
     }
   };
 
+  // Manejadores para Headcount
+  const handleHeadcountSave = () => {
+    // Aquí iría la lógica para guardar los datos de headcount en el backend
+    showSuccessNotification('Se han aprobado correctamente los registros de headcount seleccionados.');
+    
+    // Actualizar estado de revisión
+    const updatedStatus: StatusItem = { 
+      complete: true, 
+      date: new Date().toISOString().split('T')[0] 
+    };
+    
+    setReviewStatus({
+      ...reviewStatus,
+      headcount: updatedStatus
+    });
+  };
+
+  // Renderizar la pestaña activa
+  const renderActiveTab = () => {
+    switch (activeTab) {
+      case 'buildPlan':
+        return (
+          <BuildPlanTab
+            onSave={handleBuildPlanSave}
+            onImport={() => setShowBuildPlanImportModal(true)}
+          />
+        );
+      case 'yield':
+        return (
+          <YieldTab
+            onSave={handleYieldSave}
+          />
+        );
+      case 'downtimes':
+        return (
+          <DowntimesTab
+            data={downtimeData}
+            setData={setDowntimeData}
+            onSave={handleDowntimeSave}
+          />
+        );
+      case 'headcount':
+        return (
+          <HeadcountTab
+            onSave={handleHeadcountSave}
+          />
+        );
+      case 'runRates':
+        return <div>Contenido de Run Rates (pendiente)</div>;
+      default:
+        return <div>Selecciona una pestaña</div>;
+    }
+  };
+
   return (
     <div className="container mx-auto p-6 max-w-7xl">
       {/* Header */}
@@ -143,48 +202,7 @@ const InputReviewRefactored: React.FC = () => {
       
       {/* Contenido de pestañas */}
       <div className="bg-white rounded-lg shadow-lg p-6">
-        {activeTab === 'buildPlan' && (
-          <BuildPlanTab 
-            data={buildPlanData}
-            onImport={handleBuildPlanImport}
-            onSave={handleBuildPlanSave}
-            lastImportedFile={lastBuildPlanImportedFile}
-          />
-        )}
-        
-        {activeTab === 'yield' && (
-          <YieldTab 
-            data={yieldData}
-            setData={setYieldData}
-            onSave={handleYieldSave}
-            approvalLogs={yieldApprovalLogs}
-            setApprovalLogs={setYieldApprovalLogs}
-          />
-        )}
-        
-        {activeTab === 'downtimes' && (
-          <DowntimesTab 
-            data={downtimeData}
-            setData={setDowntimeData}
-            onSave={handleDowntimeSave}
-            onImport={handleDowntimeImport}
-            approvalLogs={downtimeApprovalLogs}
-            setApprovalLogs={setDowntimeApprovalLogs}
-            lastImportedFile={lastDowntimeImportedFile}
-          />
-        )}
-        
-        {activeTab === 'headcount' && (
-          <div className="text-center py-12 text-gray-500">
-            <p>Funcionalidad de Headcount en desarrollo</p>
-          </div>
-        )}
-        
-        {activeTab === 'runRates' && (
-          <div className="text-center py-12 text-gray-500">
-            <p>Funcionalidad de Run Rates en desarrollo</p>
-          </div>
-        )}
+        {renderActiveTab()}
       </div>
       
       {/* Modales */}
