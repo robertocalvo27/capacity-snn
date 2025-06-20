@@ -18,6 +18,7 @@ export const inputReviewStatus: Record<string, StatusItem> = {
   runRates: { complete: false, date: null },
   yield: { complete: true, date: '2024-01-16' },
   downtimes: { complete: false, date: null },
+  calendarDays: { complete: false, date: null },
   summary: { complete: false, date: null }
 };
 
