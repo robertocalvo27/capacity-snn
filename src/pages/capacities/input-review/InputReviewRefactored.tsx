@@ -18,6 +18,7 @@ import SummaryTab from './components/Summary/SummaryTab';
 // Nuevos componentes
 import CalendarDaysTab from './components/Calendar/CalendarDaysTab';
 import ImportHistoryTab from './components/ImportHistory/ImportHistoryTab';
+import TrainingCurvesTab from './components/TrainingCurves/TrainingCurvesTab';
 
 // Datos mock
 import { inputReviewStatus, tabData, approvalLogs, StatusItem } from './data/mockData';
@@ -181,6 +182,22 @@ const InputReviewRefactored: React.FC = () => {
     });
   };
 
+  // Manejadores para Training Curves
+  const handleTrainingCurvesSave = () => {
+    showSuccessNotification('Se han guardado correctamente las curvas de entrenamiento.');
+    
+    // Actualizar estado de revisión
+    const updatedStatus: StatusItem = { 
+      complete: true, 
+      date: new Date().toISOString().split('T')[0] 
+    };
+    
+    setReviewStatus({
+      ...reviewStatus,
+      trainingCurves: updatedStatus
+    });
+  };
+
   // Renderizar la pestaña activa
   const renderActiveTab = () => {
     switch (activeTab) {
@@ -227,6 +244,12 @@ const InputReviewRefactored: React.FC = () => {
         return (
           <CalendarDaysTab
             onSave={handleCalendarDaysSave}
+          />
+        );
+      case 'trainingCurves':
+        return (
+          <TrainingCurvesTab
+            onSave={handleTrainingCurvesSave}
           />
         );
       case 'importHistory':

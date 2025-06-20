@@ -1,5 +1,5 @@
 import React from 'react';
-import { Check, AlertTriangle, ChartBar, Calendar, FileText } from 'lucide-react';
+import { Check, AlertTriangle, ChartBar, Calendar, FileText, Users } from 'lucide-react';
 
 interface StatusItem {
   complete: boolean;
@@ -89,6 +89,19 @@ const TabNavigation: React.FC<TabNavigationProps> = ({
           Calendar Days
           {!status.calendarDays?.complete && <AlertTriangle className="inline-block w-4 h-4 ml-1 text-amber-500" />}
           {status.calendarDays?.complete && <Check className="inline-block w-4 h-4 ml-1 text-green-500" />}
+        </button>
+        <button
+          className={`py-4 px-6 border-b-2 font-medium text-sm whitespace-nowrap ${
+            activeTab === 'trainingCurves' 
+              ? 'border-blue-500 text-blue-600' 
+              : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+          }`}
+          onClick={() => setActiveTab('trainingCurves')}
+        >
+          <Users className="inline-block w-4 h-4 mr-1" />
+          Training Curves
+          {!status.trainingCurves?.complete && <AlertTriangle className="inline-block w-4 h-4 ml-1 text-amber-500" />}
+          {status.trainingCurves?.complete && <Check className="inline-block w-4 h-4 ml-1 text-green-500" />}
         </button>
         <button
           className={`py-4 px-6 border-b-2 font-medium text-sm whitespace-nowrap ${

@@ -97,16 +97,47 @@ export interface EnhancedDowntime {
 export interface TrainingCurve {
   id?: string;
   employeeId: string;
-  employeeName?: string;
+  employeeName: string;
+  employeeNumber?: string;
+  position: string; // OPER, TMP, LL, etc.
   operation: string;
-  efficiencyPercentage: number;
+  operationCode?: string;
+  currentEfficiency: number; // Porcentaje actual (0-100)
+  targetEfficiency: number; // Porcentaje objetivo (generalmente 100)
   startDate: Date;
   expectedCompletionDate: Date;
-  status: 'active' | 'completed' | 'pending' | 'cancelled';
-  valueStream?: string;
+  actualCompletionDate?: Date;
+  status: 'active' | 'completed' | 'pending' | 'cancelled' | 'on_hold';
+  valueStream: string;
   line?: string;
+  shift: 'T1' | 'T2' | 'T3';
+  trainer?: string;
+  notes?: string;
+  weeklyProgress?: TrainingProgress[];
+  createdBy?: string;
+  approvedBy?: string;
   createdAt?: string;
   updatedAt?: string;
+}
+
+export interface TrainingProgress {
+  week: number;
+  date: Date;
+  efficiencyAchieved: number;
+  hoursWorked: number;
+  notes?: string;
+  evaluatedBy?: string;
+}
+
+export interface TrainingCurveImpact {
+  valueStream: string;
+  line?: string;
+  shift: 'T1' | 'T2' | 'T3';
+  totalEmployees: number;
+  employeesInTraining: number;
+  averageEfficiency: number;
+  capacityImpact: number; // Porcentaje de reducción en capacidad
+  estimatedRecoveryDate?: Date;
 }
 
 export interface LotChangeCalculation {
