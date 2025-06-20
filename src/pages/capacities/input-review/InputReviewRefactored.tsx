@@ -15,6 +15,10 @@ import DowntimesTab from './components/Downtimes/DowntimesTab';
 import HeadcountTab from './components/Headcount/HeadcountTab';
 import SummaryTab from './components/Summary/SummaryTab';
 
+// Nuevos componentes
+import CalendarDaysTab from './components/Calendar/CalendarDaysTab';
+import ImportHistoryTab from './components/ImportHistory/ImportHistoryTab';
+
 // Datos mock
 import { inputReviewStatus, tabData, approvalLogs, StatusItem } from './data/mockData';
 
@@ -161,6 +165,22 @@ const InputReviewRefactored: React.FC = () => {
     });
   };
 
+  // Nuevos manejadores para Calendar Days
+  const handleCalendarDaysSave = () => {
+    showSuccessNotification('Se han aprobado correctamente los días calendario seleccionados.');
+    
+    // Actualizar estado de revisión
+    const updatedStatus: StatusItem = { 
+      complete: true, 
+      date: new Date().toISOString().split('T')[0] 
+    };
+    
+    setReviewStatus({
+      ...reviewStatus,
+      calendarDays: updatedStatus
+    });
+  };
+
   // Renderizar la pestaña activa
   const renderActiveTab = () => {
     switch (activeTab) {
@@ -203,6 +223,14 @@ const InputReviewRefactored: React.FC = () => {
         );
       case 'runRates':
         return <div>Contenido de Run Rates (pendiente)</div>;
+      case 'calendarDays':
+        return (
+          <CalendarDaysTab
+            onSave={handleCalendarDaysSave}
+          />
+        );
+      case 'importHistory':
+        return <ImportHistoryTab />;
       case 'summary':
         return (
           <SummaryTab

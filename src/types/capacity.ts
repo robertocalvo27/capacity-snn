@@ -44,3 +44,112 @@ export function getTheoreticalHC(shift: 'T1' | 'T2' | 'T3'): number {
   const hcData = THEORETICAL_HC.find(hc => hc.shift === shift);
   return hcData?.theoreticalHC || 0;
 }
+
+export interface CalendarDay {
+  id?: string;
+  date: Date;
+  isWorkingDay: boolean;
+  description?: string;
+  valueStream?: string;
+  approvedBy?: string;
+  status: 'pending' | 'approved' | 'rejected';
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface ImportLog {
+  id: string;
+  fileName: string;
+  uploadedBy: string;
+  uploadDate: Date;
+  fileType: 'buildplan' | 'headcount' | 'runrates' | 'yield' | 'downtimes' | 'calendar';
+  status: 'success' | 'error' | 'processing';
+  recordsProcessed: number;
+  errorMessage?: string;
+  fileSize?: number;
+  filePath?: string;
+}
+
+export interface EnhancedDowntime {
+  id: string;
+  type: 'standard' | 'special';
+  category: 'tier' | 'setup' | 'ergonomic' | 'validation' | 'material_change' | 'training';
+  duration: number;
+  description: string;
+  requiresApproval: boolean;
+  valueStream?: string;
+  line?: string;
+  date?: string;
+  approvedBy?: string;
+  approvedAt?: string;
+  status: 'pending' | 'approved' | 'rejected';
+}
+
+export interface TrainingCurve {
+  id?: string;
+  employeeId: string;
+  employeeName?: string;
+  operation: string;
+  efficiencyPercentage: number;
+  startDate: Date;
+  expectedCompletionDate: Date;
+  status: 'active' | 'completed' | 'pending' | 'cancelled';
+  valueStream?: string;
+  line?: string;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface LotChangeCalculation {
+  id?: string;
+  partNumber: string;
+  demand: number;
+  lotSize: number;
+  changesRequired: number;
+  timePerChange: number; // minutos
+  totalLostTime: number;
+  impactOnCapacity: number;
+  valueStream?: string;
+  line?: string;
+  week?: string;
+  month?: string;
+}
+
+export interface NetAvailableTimeCalculation {
+  id?: string;
+  valueStream: string;
+  line?: string;
+  month: string;
+  week?: string;
+  calendarHours: number;
+  standardDowntimes: number;
+  specialDowntimes: number;
+  trainingCurveImpact: number;
+  lotChangeImpact: number;
+  netAvailableTime: number;
+  utilizationPercentage: number;
+  calculatedAt: string;
+}
+
+// Tipos para Status extendidos
+export interface ExtendedStatusItem {
+  complete: boolean;
+  date: string | null;
+  approvedBy?: string;
+  requiresApproval?: boolean;
+  pendingItems?: number;
+  totalItems?: number;
+}
+
+export interface InputReviewStatusExtended {
+  buildPlan: ExtendedStatusItem;
+  headcount: ExtendedStatusItem;
+  runRates: ExtendedStatusItem;
+  yield: ExtendedStatusItem;
+  downtimes: ExtendedStatusItem;
+  summary: ExtendedStatusItem;
+  // Nuevos módulos
+  calendarDays: ExtendedStatusItem;
+  trainingCurves: ExtendedStatusItem;
+  lotChanges: ExtendedStatusItem;
+}

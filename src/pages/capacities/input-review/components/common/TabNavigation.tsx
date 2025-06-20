@@ -1,5 +1,5 @@
 import React from 'react';
-import { Check, AlertTriangle, ChartBar } from 'lucide-react';
+import { Check, AlertTriangle, ChartBar, Calendar, FileText } from 'lucide-react';
 
 interface StatusItem {
   complete: boolean;
@@ -29,7 +29,7 @@ const TabNavigation: React.FC<TabNavigationProps> = ({
           onClick={() => setActiveTab('buildPlan')}
         >
           Build Plan
-          {status.buildPlan.complete && <Check className="inline-block w-4 h-4 ml-1 text-green-500" />}
+          {status.buildPlan?.complete && <Check className="inline-block w-4 h-4 ml-1 text-green-500" />}
         </button>
         <button
           className={`py-4 px-6 border-b-2 font-medium text-sm whitespace-nowrap ${
@@ -40,7 +40,7 @@ const TabNavigation: React.FC<TabNavigationProps> = ({
           onClick={() => setActiveTab('headcount')}
         >
           Headcount
-          {status.headcount.complete && <Check className="inline-block w-4 h-4 ml-1 text-green-500" />}
+          {status.headcount?.complete && <Check className="inline-block w-4 h-4 ml-1 text-green-500" />}
         </button>
         <button
           className={`py-4 px-6 border-b-2 font-medium text-sm whitespace-nowrap ${
@@ -51,8 +51,8 @@ const TabNavigation: React.FC<TabNavigationProps> = ({
           onClick={() => setActiveTab('runRates')}
         >
           Run Rates
-          {!status.runRates.complete && <AlertTriangle className="inline-block w-4 h-4 ml-1 text-amber-500" />}
-          {status.runRates.complete && <Check className="inline-block w-4 h-4 ml-1 text-green-500" />}
+          {!status.runRates?.complete && <AlertTriangle className="inline-block w-4 h-4 ml-1 text-amber-500" />}
+          {status.runRates?.complete && <Check className="inline-block w-4 h-4 ml-1 text-green-500" />}
         </button>
         <button
           className={`py-4 px-6 border-b-2 font-medium text-sm whitespace-nowrap ${
@@ -63,7 +63,7 @@ const TabNavigation: React.FC<TabNavigationProps> = ({
           onClick={() => setActiveTab('yield')}
         >
           Yield
-          {status.yield.complete && <Check className="inline-block w-4 h-4 ml-1 text-green-500" />}
+          {status.yield?.complete && <Check className="inline-block w-4 h-4 ml-1 text-green-500" />}
         </button>
         <button
           className={`py-4 px-6 border-b-2 font-medium text-sm whitespace-nowrap ${
@@ -74,8 +74,32 @@ const TabNavigation: React.FC<TabNavigationProps> = ({
           onClick={() => setActiveTab('downtimes')}
         >
           Downtimes
-          {!status.downtimes.complete && <AlertTriangle className="inline-block w-4 h-4 ml-1 text-amber-500" />}
-          {status.downtimes.complete && <Check className="inline-block w-4 h-4 ml-1 text-green-500" />}
+          {!status.downtimes?.complete && <AlertTriangle className="inline-block w-4 h-4 ml-1 text-amber-500" />}
+          {status.downtimes?.complete && <Check className="inline-block w-4 h-4 ml-1 text-green-500" />}
+        </button>
+        <button
+          className={`py-4 px-6 border-b-2 font-medium text-sm whitespace-nowrap ${
+            activeTab === 'calendarDays' 
+              ? 'border-blue-500 text-blue-600' 
+              : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+          }`}
+          onClick={() => setActiveTab('calendarDays')}
+        >
+          <Calendar className="inline-block w-4 h-4 mr-1" />
+          Calendar Days
+          {!status.calendarDays?.complete && <AlertTriangle className="inline-block w-4 h-4 ml-1 text-amber-500" />}
+          {status.calendarDays?.complete && <Check className="inline-block w-4 h-4 ml-1 text-green-500" />}
+        </button>
+        <button
+          className={`py-4 px-6 border-b-2 font-medium text-sm whitespace-nowrap ${
+            activeTab === 'importHistory' 
+              ? 'border-blue-500 text-blue-600' 
+              : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+          }`}
+          onClick={() => setActiveTab('importHistory')}
+        >
+          <FileText className="inline-block w-4 h-4 mr-1" />
+          Import History
         </button>
         <button
           className={`py-4 px-6 border-b-2 font-medium text-sm whitespace-nowrap ${
