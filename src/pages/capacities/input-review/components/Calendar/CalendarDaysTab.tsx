@@ -35,6 +35,9 @@ const CalendarDaysTab: React.FC<CalendarDaysTabProps> = ({ onSave }) => {
     sundayHours: 0
   });
 
+  // Estado para mostrar/ocultar distribución de horas
+  const [showHoursDistribution, setShowHoursDistribution] = useState(false);
+
   useEffect(() => {
     loadCalendarData();
     loadMonthlyStats();
@@ -309,23 +312,41 @@ const CalendarDaysTab: React.FC<CalendarDaysTabProps> = ({ onSave }) => {
         </div>
       </div>
 
-      {/* Desglose de horas por tipo de día */}
-      <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
-        <h4 className="text-sm font-medium text-gray-900 mb-3">Distribución de Horas</h4>
-        <div className="grid grid-cols-3 gap-4">
-          <div className="text-center">
-            <div className="text-lg font-semibold text-gray-900">{monthlyStats.weekdayHours}h</div>
-            <div className="text-sm text-gray-500">Días de semana</div>
+      {/* Desglose de horas por tipo de día - Expandible */}
+      <div className="bg-white rounded-lg shadow-sm border border-gray-200">
+        <button
+          onClick={() => setShowHoursDistribution(!showHoursDistribution)}
+          className="w-full flex items-center justify-between p-4 hover:bg-gray-50 transition-colors"
+        >
+          <h4 className="text-sm font-medium text-gray-900">Distribución de Horas</h4>
+          <svg
+            className={`w-5 h-5 text-gray-500 transition-transform ${showHoursDistribution ? 'rotate-180' : ''}`}
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+          </svg>
+        </button>
+        
+        {showHoursDistribution && (
+          <div className="px-4 pb-4 border-t border-gray-100">
+            <div className="grid grid-cols-3 gap-4 pt-3">
+              <div className="text-center">
+                <div className="text-lg font-semibold text-gray-900">{monthlyStats.weekdayHours}h</div>
+                <div className="text-sm text-gray-500">Días de semana</div>
+              </div>
+              <div className="text-center">
+                <div className="text-lg font-semibold text-blue-600">{monthlyStats.saturdayHours}h</div>
+                <div className="text-sm text-gray-500">Sábados</div>
+              </div>
+              <div className="text-center">
+                <div className="text-lg font-semibold text-red-600">{monthlyStats.sundayHours}h</div>
+                <div className="text-sm text-gray-500">Domingos</div>
+              </div>
+            </div>
           </div>
-          <div className="text-center">
-            <div className="text-lg font-semibold text-blue-600">{monthlyStats.saturdayHours}h</div>
-            <div className="text-sm text-gray-500">Sábados</div>
-          </div>
-          <div className="text-center">
-            <div className="text-lg font-semibold text-red-600">{monthlyStats.sundayHours}h</div>
-            <div className="text-sm text-gray-500">Domingos</div>
-          </div>
-        </div>
+        )}
       </div>
 
       {/* Controles de selección */}
