@@ -94,19 +94,48 @@ export interface EnhancedDowntime {
   frequency?: 'daily' | 'weekly' | 'monthly' | 'quarterly';
 }
 
-export interface TrainingCurve {
-  id?: string;
-  employeeId: string;
-  employeeName?: string;
+// Learning Curve Adjustments (Simplified approach)
+export interface LearningCurveAdjustment {
+  id: string;
+  valueStream: string;
+  productionLine: string;
   operation: string;
-  efficiencyPercentage: number;
-  startDate: Date;
-  expectedCompletionDate: Date;
-  status: 'active' | 'completed' | 'pending' | 'cancelled';
-  valueStream?: string;
-  line?: string;
-  createdAt?: string;
-  updatedAt?: string;
+  operationCode: string;
+  adjustmentPercentage: number; // % reduction in capacity (0-100)
+  effectiveStartDate: string;
+  effectiveEndDate?: string;
+  reason: string; // Why this adjustment is needed
+  notes?: string;
+  status: 'active' | 'inactive' | 'expired';
+  createdAt: string;
+  updatedAt: string;
+  createdBy: string;
+  approvedBy?: string;
+  approvedAt?: string;
+}
+
+export interface LearningCurveImpact {
+  valueStream: string;
+  productionLine: string;
+  operation: string;
+  baseCapacity: number;
+  adjustmentPercentage: number;
+  adjustedCapacity: number;
+  impactLevel: 'low' | 'medium' | 'high' | 'critical';
+  effectivePeriod: string;
+}
+
+export interface LearningCurveStats {
+  totalAdjustments: number;
+  activeAdjustments: number;
+  averageAdjustment: number;
+  totalCapacityImpact: number;
+  impactByLevel: {
+    low: number;
+    medium: number;
+    high: number;
+    critical: number;
+  };
 }
 
 export interface LotChangeCalculation {
