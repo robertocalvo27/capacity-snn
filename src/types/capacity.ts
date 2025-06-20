@@ -94,50 +94,48 @@ export interface EnhancedDowntime {
   frequency?: 'daily' | 'weekly' | 'monthly' | 'quarterly';
 }
 
-export interface TrainingCurve {
-  id?: string;
-  employeeId: string;
-  employeeName: string;
-  employeeNumber?: string;
-  position: string; // OPER, TMP, LL, etc.
+// Learning Curve Adjustments (Simplified approach)
+export interface LearningCurveAdjustment {
+  id: string;
+  valueStream: string;
+  productionLine: string;
   operation: string;
-  operationCode?: string;
-  currentEfficiency: number; // Porcentaje actual (0-100)
-  targetEfficiency: number; // Porcentaje objetivo (generalmente 100)
-  startDate: Date;
-  expectedCompletionDate: Date;
-  actualCompletionDate?: Date;
-  status: 'active' | 'completed' | 'pending' | 'cancelled' | 'on_hold';
-  valueStream: string;
-  line?: string;
-  shift: 'T1' | 'T2' | 'T3';
-  trainer?: string;
+  operationCode: string;
+  adjustmentPercentage: number; // % reduction in capacity (0-100)
+  effectiveStartDate: string;
+  effectiveEndDate?: string;
+  reason: string; // Why this adjustment is needed
   notes?: string;
-  weeklyProgress?: TrainingProgress[];
-  createdBy?: string;
+  status: 'active' | 'inactive' | 'expired';
+  createdAt: string;
+  updatedAt: string;
+  createdBy: string;
   approvedBy?: string;
-  createdAt?: string;
-  updatedAt?: string;
+  approvedAt?: string;
 }
 
-export interface TrainingProgress {
-  week: number;
-  date: Date;
-  efficiencyAchieved: number;
-  hoursWorked: number;
-  notes?: string;
-  evaluatedBy?: string;
-}
-
-export interface TrainingCurveImpact {
+export interface LearningCurveImpact {
   valueStream: string;
-  line?: string;
-  shift: 'T1' | 'T2' | 'T3';
-  totalEmployees: number;
-  employeesInTraining: number;
-  averageEfficiency: number;
-  capacityImpact: number; // Porcentaje de reducción en capacidad
-  estimatedRecoveryDate?: Date;
+  productionLine: string;
+  operation: string;
+  baseCapacity: number;
+  adjustmentPercentage: number;
+  adjustedCapacity: number;
+  impactLevel: 'low' | 'medium' | 'high' | 'critical';
+  effectivePeriod: string;
+}
+
+export interface LearningCurveStats {
+  totalAdjustments: number;
+  activeAdjustments: number;
+  averageAdjustment: number;
+  totalCapacityImpact: number;
+  impactByLevel: {
+    low: number;
+    medium: number;
+    high: number;
+    critical: number;
+  };
 }
 
 export interface LotChangeCalculation {

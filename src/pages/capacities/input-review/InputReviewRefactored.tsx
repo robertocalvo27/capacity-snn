@@ -32,6 +32,7 @@ const InputReviewRefactored: React.FC = () => {
   const [reviewStatus, setReviewStatus] = useState(inputReviewStatus);
   const [showNotification, setShowNotification] = useState<boolean>(false);
   const [notificationMessage, setNotificationMessage] = useState<string>('');
+  const [selectedValueStream, setSelectedValueStream] = useState<string>('all');
 
   // Estados específicos para BuildPlan
   const [buildPlanData, setBuildPlanData] = useState<any[]>(tabData.buildPlan);
@@ -249,7 +250,7 @@ const InputReviewRefactored: React.FC = () => {
       case 'trainingCurves':
         return (
           <TrainingCurvesTab
-            onSave={handleTrainingCurvesSave}
+            selectedValueStream={selectedValueStream}
           />
         );
       case 'importHistory':

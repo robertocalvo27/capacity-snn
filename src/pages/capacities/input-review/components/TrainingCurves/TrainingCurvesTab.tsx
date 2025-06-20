@@ -1,542 +1,559 @@
 import React, { useState, useEffect } from 'react';
-import { Users, TrendingUp, Clock, CheckCircle, AlertCircle, Plus, Filter, Search, BarChart3, User } from 'lucide-react';
-import { TrainingCurve, TrainingCurveImpact, TrainingProgress } from '@/types/capacity';
-import { trainingCurveService } from '@/services/trainingCurveService';
-import TrainingCurveModal from './TrainingCurveModal';
-import ProgressTrackingModal from './ProgressTrackingModal';
+import { Plus, Search, Filter, TrendingDown, AlertTriangle, CheckCircle, Clock } from 'lucide-react';
+import { learningCurveService } from '../../../../../services/trainingCurveService';
+import type { LearningCurveAdjustment, LearningCurveImpact, LearningCurveStats } from '../../../../../types/capacity';
+import LearningCurveModal from './LearningCurveModal';
 import CapacityImpactChart from './CapacityImpactChart';
 
 interface TrainingCurvesTabProps {
-  onSave: () => void;
+  selectedValueStream: string;
 }
 
-const TrainingCurvesTab: React.FC<TrainingCurvesTabProps> = ({ onSave }) => {
-  // Estados principales
-  const [trainingCurves, setTrainingCurves] = useState<TrainingCurve[]>([]);
-  const [capacityImpacts, setCapacityImpacts] = useState<TrainingCurveImpact[]>([]);
+const TrainingCurvesTab: React.FC<TrainingCurvesTabProps> = ({ selectedValueStream }) => {
+  const [adjustments, setAdjustments] = useState<LearningCurveAdjustment[]>([]);
+  const [filteredAdjustments, setFilteredAdjustments] = useState<LearningCurveAdjustment[]>([]);
+  const [impacts, setImpacts] = useState<LearningCurveImpact[]>([]);
+  const [stats, setStats] = useState<LearningCurveStats | null>(null);
   const [loading, setLoading] = useState(true);
-  const [selectedCurves, setSelectedCurves] = useState<string[]>([]);
-
-  // Estados de modales
-  const [showCurveModal, setShowCurveModal] = useState(false);
-  const [showProgressModal, setShowProgressModal] = useState(false);
-  const [editingCurve, setEditingCurve] = useState<TrainingCurve | null>(null);
-
-  // Estados de filtros
+  const [error, setError] = useState<string | null>(null);
+  
+  // UI State
   const [searchTerm, setSearchTerm] = useState('');
-  const [filterValueStream, setFilterValueStream] = useState<string>('');
-  const [filterStatus, setFilterStatus] = useState<TrainingCurve['status'] | ''>('');
-  const [filterShift, setFilterShift] = useState<'T1' | 'T2' | 'T3' | ''>('');
+  const [statusFilter, setStatusFilter] = useState('all');
+  const [lineFilter, setLineFilter] = useState('all');
+  const [activeView, setActiveView] = useState<'list' | 'impact' | 'stats'>('list');
+  const [selectedAdjustments, setSelectedAdjustments] = useState<string[]>([]);
+  const [showModal, setShowModal] = useState(false);
+  const [editingAdjustment, setEditingAdjustment] = useState<LearningCurveAdjustment | null>(null);
 
-  // Estados de estadísticas
-  const [statistics, setStatistics] = useState({
-    totalActive: 0,
-    totalCompleted: 0,
-    totalPending: 0,
-    averageEfficiency: 0,
-    totalCapacityImpact: 0
-  });
-
-  // Estados de vista
-  const [activeView, setActiveView] = useState<'list' | 'impact' | 'statistics'>('list');
-
+  // Load data
   useEffect(() => {
-    loadTrainingData();
-  }, [filterValueStream, filterStatus, filterShift]);
+    loadData();
+  }, []);
 
-  const loadTrainingData = async () => {
+  // Filter adjustments when search or filters change
+  useEffect(() => {
+    filterAdjustments();
+  }, [adjustments, searchTerm, statusFilter, lineFilter, selectedValueStream]);
+
+  const loadData = async () => {
     try {
       setLoading(true);
+      setError(null);
       
-      const filters = {
-        valueStream: filterValueStream || undefined,
-        status: filterStatus || undefined,
-        shift: filterShift || undefined
-      };
-
-      const [curves, impacts, stats] = await Promise.all([
-        trainingCurveService.getTrainingCurves(filters),
-        trainingCurveService.calculateCapacityImpact(filterValueStream || undefined),
-        trainingCurveService.getTrainingStatistics()
+      const [adjustmentsData, impactsData, statsData] = await Promise.all([
+        learningCurveService.getAllAdjustments(),
+        learningCurveService.getCapacityImpact(),
+        learningCurveService.getStatistics()
       ]);
-
-      setTrainingCurves(curves);
-      setCapacityImpacts(impacts);
-      setStatistics(stats);
-    } catch (error) {
-      console.error('Error loading training data:', error);
+      
+      setAdjustments(adjustmentsData);
+      setImpacts(impactsData);
+      setStats(statsData);
+    } catch (err) {
+      setError('Error cargando datos de ajustes por curva de aprendizaje');
+      console.error('Error loading learning curve data:', err);
     } finally {
       setLoading(false);
     }
   };
 
-  const handleCreateCurve = () => {
-    setEditingCurve(null);
-    setShowCurveModal(true);
+  const filterAdjustments = () => {
+    let filtered = adjustments;
+
+    // Filter by Value Stream
+    if (selectedValueStream !== 'all') {
+      filtered = filtered.filter(adj => adj.valueStream === selectedValueStream);
+    }
+
+    // Filter by search term
+    if (searchTerm) {
+      const term = searchTerm.toLowerCase();
+      filtered = filtered.filter(adj => 
+        adj.operation.toLowerCase().includes(term) ||
+        adj.productionLine.toLowerCase().includes(term) ||
+        adj.operationCode.toLowerCase().includes(term) ||
+        adj.reason.toLowerCase().includes(term)
+      );
+    }
+
+    // Filter by status
+    if (statusFilter !== 'all') {
+      filtered = filtered.filter(adj => adj.status === statusFilter);
+    }
+
+    // Filter by production line
+    if (lineFilter !== 'all') {
+      filtered = filtered.filter(adj => adj.productionLine === lineFilter);
+    }
+
+    setFilteredAdjustments(filtered);
   };
 
-  const handleEditCurve = (curve: TrainingCurve) => {
-    setEditingCurve(curve);
-    setShowCurveModal(true);
+  const handleCreateAdjustment = () => {
+    setEditingAdjustment(null);
+    setShowModal(true);
   };
 
-  const handleTrackProgress = (curve: TrainingCurve) => {
-    setEditingCurve(curve);
-    setShowProgressModal(true);
+  const handleEditAdjustment = (adjustment: LearningCurveAdjustment) => {
+    setEditingAdjustment(adjustment);
+    setShowModal(true);
   };
 
-  const handleSaveCurve = async (curveData: Partial<TrainingCurve>) => {
+  const handleSaveAdjustment = async (adjustmentData: any) => {
     try {
-      if (editingCurve) {
-        await trainingCurveService.updateTrainingCurve(editingCurve.id!, curveData);
+      if (editingAdjustment) {
+        await learningCurveService.updateAdjustment(editingAdjustment.id, adjustmentData);
       } else {
-        await trainingCurveService.createTrainingCurve(curveData as any);
+        await learningCurveService.createAdjustment(adjustmentData);
       }
       
-      await loadTrainingData();
-      setShowCurveModal(false);
-      setEditingCurve(null);
-      onSave();
-    } catch (error) {
-      console.error('Error saving training curve:', error);
+      await loadData();
+      setShowModal(false);
+      setEditingAdjustment(null);
+    } catch (err) {
+      console.error('Error saving adjustment:', err);
     }
   };
 
-  const handleCurveSelection = (curveId: string) => {
-    setSelectedCurves(prev => 
-      prev.includes(curveId) 
-        ? prev.filter(id => id !== curveId)
-        : [...prev, curveId]
+  const handleDeleteAdjustment = async (id: string) => {
+    if (window.confirm('¿Estás seguro de que deseas eliminar este ajuste?')) {
+      try {
+        await learningCurveService.deleteAdjustment(id);
+        await loadData();
+      } catch (err) {
+        console.error('Error deleting adjustment:', err);
+      }
+    }
+  };
+
+  const handleBulkApprove = async () => {
+    if (selectedAdjustments.length === 0) return;
+    
+    try {
+      await learningCurveService.bulkApprove(selectedAdjustments, 'current_user@company.com');
+      await loadData();
+      setSelectedAdjustments([]);
+    } catch (err) {
+      console.error('Error bulk approving adjustments:', err);
+    }
+  };
+
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'active': return 'text-green-600 bg-green-100';
+      case 'inactive': return 'text-gray-600 bg-gray-100';
+      case 'expired': return 'text-red-600 bg-red-100';
+      default: return 'text-gray-600 bg-gray-100';
+    }
+  };
+
+  const getImpactColor = (percentage: number) => {
+    if (percentage >= 15) return 'text-red-600 bg-red-100';
+    if (percentage >= 10) return 'text-orange-600 bg-orange-100';
+    if (percentage >= 5) return 'text-yellow-600 bg-yellow-100';
+    return 'text-green-600 bg-green-100';
+  };
+
+  const getUniqueLines = () => {
+    return [...new Set(adjustments.map(adj => adj.productionLine))];
+  };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+      </div>
     );
-  };
+  }
 
-  const getStatusIcon = (status: TrainingCurve['status']) => {
-    switch (status) {
-      case 'active':
-        return <TrendingUp className="w-4 h-4 text-blue-500" />;
-      case 'completed':
-        return <CheckCircle className="w-4 h-4 text-green-500" />;
-      case 'pending':
-        return <Clock className="w-4 h-4 text-amber-500" />;
-      case 'on_hold':
-        return <AlertCircle className="w-4 h-4 text-red-500" />;
-      default:
-        return <Clock className="w-4 h-4 text-gray-500" />;
-    }
-  };
-
-  const getStatusBadge = (status: TrainingCurve['status']) => {
-    switch (status) {
-      case 'active':
-        return 'bg-blue-100 text-blue-800';
-      case 'completed':
-        return 'bg-green-100 text-green-800';
-      case 'pending':
-        return 'bg-amber-100 text-amber-800';
-      case 'on_hold':
-        return 'bg-red-100 text-red-800';
-      default:
-        return 'bg-gray-100 text-gray-800';
-    }
-  };
-
-  const getEfficiencyColor = (efficiency: number) => {
-    if (efficiency >= 90) return 'text-green-600';
-    if (efficiency >= 70) return 'text-amber-600';
-    return 'text-red-600';
-  };
-
-  const filteredCurves = trainingCurves.filter(curve =>
-    curve.employeeName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    curve.operation.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    curve.employeeNumber?.toLowerCase().includes(searchTerm.toLowerCase())
-  );
-
-  const VALUE_STREAMS = ['ENT', 'SM', 'JR', 'WND', 'APO'];
+  if (error) {
+    return (
+      <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+        <div className="flex items-center">
+          <AlertTriangle className="h-5 w-5 text-red-600 mr-2" />
+          <span className="text-red-800">{error}</span>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-        <div className="flex justify-between items-center mb-4">
-          <div className="flex items-center">
-            <Users className="w-6 h-6 mr-3 text-blue-600" />
-            <div>
-              <h3 className="text-lg font-medium text-gray-900">Curvas de Entrenamiento</h3>
-              <p className="text-sm text-gray-500">
-                Gestión y seguimiento de empleados en proceso de entrenamiento
-              </p>
+      <div className="flex items-center justify-between">
+        <div className="flex items-center space-x-3">
+          <TrendingDown className="h-6 w-6 text-blue-600" />
+          <div>
+            <h2 className="text-xl font-semibold text-gray-900">Ajustes por Curva de Aprendizaje</h2>
+            <p className="text-sm text-gray-600">Factores de ajuste de capacidad por operación y línea</p>
+          </div>
+        </div>
+        <button
+          onClick={handleCreateAdjustment}
+          className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 flex items-center space-x-2"
+        >
+          <Plus className="h-4 w-4" />
+          <span>Nuevo Ajuste</span>
+        </button>
+      </div>
+
+      {/* Stats Cards */}
+      {stats && (
+        <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+          <div className="bg-blue-50 rounded-lg p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-blue-600">Ajustes Activos</p>
+                <p className="text-2xl font-bold text-blue-900">{stats.activeAdjustments}</p>
+                <p className="text-xs text-blue-600">en aplicación</p>
+              </div>
+              <CheckCircle className="h-8 w-8 text-blue-600" />
             </div>
           </div>
 
-          <button
-            onClick={handleCreateCurve}
-            className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
-          >
-            <Plus className="w-4 h-4 mr-2" />
-            Nueva Curva
-          </button>
-        </div>
+          <div className="bg-green-50 rounded-lg p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-green-600">Total Ajustes</p>
+                <p className="text-2xl font-bold text-green-900">{stats.totalAdjustments}</p>
+                <p className="text-xs text-green-600">configurados</p>
+              </div>
+              <Filter className="h-8 w-8 text-green-600" />
+            </div>
+          </div>
 
-        {/* Navigation Tabs */}
-        <div className="flex space-x-4 border-b border-gray-200">
-          {[
-            { key: 'list', label: 'Lista de Curvas', icon: Users },
-            { key: 'impact', label: 'Impacto en Capacidad', icon: BarChart3 },
-            { key: 'statistics', label: 'Estadísticas', icon: TrendingUp }
-          ].map(({ key, label, icon: Icon }) => (
-            <button
-              key={key}
-              onClick={() => setActiveView(key as any)}
-              className={`flex items-center px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
-                activeView === key
-                  ? 'border-blue-500 text-blue-600'
-                  : 'border-transparent text-gray-500 hover:text-gray-700'
-              }`}
-            >
-              <Icon className="w-4 h-4 mr-2" />
-              {label}
-            </button>
-          ))}
+          <div className="bg-yellow-50 rounded-lg p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-yellow-600">Ajuste Promedio</p>
+                <p className="text-2xl font-bold text-yellow-900">{stats.averageAdjustment}%</p>
+                <p className="text-xs text-yellow-600">reducción</p>
+              </div>
+              <TrendingDown className="h-8 w-8 text-yellow-600" />
+            </div>
+          </div>
+
+          <div className="bg-red-50 rounded-lg p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-red-600">Impacto Total</p>
+                <p className="text-2xl font-bold text-red-900">{stats.totalCapacityImpact}</p>
+                <p className="text-xs text-red-600">unidades/día</p>
+              </div>
+              <AlertTriangle className="h-8 w-8 text-red-600" />
+            </div>
+          </div>
+
+          <div className="bg-purple-50 rounded-lg p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-purple-600">Críticos</p>
+                <p className="text-2xl font-bold text-purple-900">{stats.impactByLevel.critical}</p>
+                <p className="text-xs text-purple-600">≥15% impacto</p>
+              </div>
+              <Clock className="h-8 w-8 text-purple-600" />
+            </div>
+          </div>
         </div>
+      )}
+
+      {/* View Toggle */}
+      <div className="flex space-x-1 bg-gray-100 rounded-lg p-1">
+        <button
+          onClick={() => setActiveView('list')}
+          className={`flex items-center space-x-2 px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+            activeView === 'list' 
+              ? 'bg-white text-blue-600 shadow-sm' 
+              : 'text-gray-600 hover:text-gray-900'
+          }`}
+        >
+          <Filter className="h-4 w-4" />
+          <span>Lista de Ajustes</span>
+        </button>
+        <button
+          onClick={() => setActiveView('impact')}
+          className={`flex items-center space-x-2 px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+            activeView === 'impact' 
+              ? 'bg-white text-blue-600 shadow-sm' 
+              : 'text-gray-600 hover:text-gray-900'
+          }`}
+        >
+          <TrendingDown className="h-4 w-4" />
+          <span>Impacto en Capacidad</span>
+        </button>
+        <button
+          onClick={() => setActiveView('stats')}
+          className={`flex items-center space-x-2 px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+            activeView === 'stats' 
+              ? 'bg-white text-blue-600 shadow-sm' 
+              : 'text-gray-600 hover:text-gray-900'
+          }`}
+        >
+          <CheckCircle className="h-4 w-4" />
+          <span>Estadísticas</span>
+        </button>
       </div>
 
-      {/* Estadísticas Rápidas */}
-      <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
-        <div className="bg-blue-50 p-4 rounded-lg">
-          <div className="text-sm font-medium text-blue-600">Activas</div>
-          <div className="text-2xl font-bold text-blue-700">{statistics.totalActive}</div>
-          <div className="text-xs text-blue-600">en entrenamiento</div>
-        </div>
-        
-        <div className="bg-green-50 p-4 rounded-lg">
-          <div className="text-sm font-medium text-green-600">Completadas</div>
-          <div className="text-2xl font-bold text-green-700">{statistics.totalCompleted}</div>
-          <div className="text-xs text-green-600">este período</div>
-        </div>
-        
-        <div className="bg-amber-50 p-4 rounded-lg">
-          <div className="text-sm font-medium text-amber-600">Pendientes</div>
-          <div className="text-2xl font-bold text-amber-700">{statistics.totalPending}</div>
-          <div className="text-xs text-amber-600">por aprobar</div>
-        </div>
-        
-        <div className="bg-purple-50 p-4 rounded-lg">
-          <div className="text-sm font-medium text-purple-600">Eficiencia Prom.</div>
-          <div className="text-2xl font-bold text-purple-700">{statistics.averageEfficiency}%</div>
-          <div className="text-xs text-purple-600">curvas activas</div>
-        </div>
-        
-        <div className="bg-red-50 p-4 rounded-lg">
-          <div className="text-sm font-medium text-red-600">Impacto Capacidad</div>
-          <div className="text-2xl font-bold text-red-700">{statistics.totalCapacityImpact}%</div>
-          <div className="text-xs text-red-600">reducción total</div>
-        </div>
-      </div>
-
-      {/* Filtros y Búsqueda */}
+      {/* Filters */}
       {activeView === 'list' && (
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
-          <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+        <div className="bg-white rounded-lg border border-gray-200 p-4">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Buscar
-              </label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Buscar</label>
               <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
                 <input
                   type="text"
-                  placeholder="Nombre, operación, número..."
+                  placeholder="Operación, línea, código..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  className="pl-10 w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
                 />
               </div>
             </div>
-            
+
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Value Stream
-              </label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Estado</label>
               <select
-                value={filterValueStream}
-                onChange={(e) => setFilterValueStream(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                value={statusFilter}
+                onChange={(e) => setStatusFilter(e.target.value)}
+                className="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
               >
-                <option value="">Todos los VST</option>
-                {VALUE_STREAMS.map(vs => (
-                  <option key={vs} value={vs}>{vs}</option>
+                <option value="all">Todos los estados</option>
+                <option value="active">Activo</option>
+                <option value="inactive">Inactivo</option>
+                <option value="expired">Expirado</option>
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Línea</label>
+              <select
+                value={lineFilter}
+                onChange={(e) => setLineFilter(e.target.value)}
+                className="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+              >
+                <option value="all">Todas las líneas</option>
+                {getUniqueLines().map(line => (
+                  <option key={line} value={line}>{line}</option>
                 ))}
               </select>
             </div>
-            
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Estado
-              </label>
-              <select
-                value={filterStatus}
-                onChange={(e) => setFilterStatus(e.target.value as any)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-              >
-                <option value="">Todos los estados</option>
-                <option value="pending">Pendiente</option>
-                <option value="active">Activa</option>
-                <option value="completed">Completada</option>
-                <option value="on_hold">En Pausa</option>
-              </select>
-            </div>
-            
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Turno
-              </label>
-              <select
-                value={filterShift}
-                onChange={(e) => setFilterShift(e.target.value as any)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-              >
-                <option value="">Todos los turnos</option>
-                <option value="T1">Turno 1</option>
-                <option value="T2">Turno 2</option>
-                <option value="T3">Turno 3</option>
-              </select>
-            </div>
-            
+
             <div className="flex items-end">
-              <div className="text-sm text-gray-600">
-                <span className="font-medium">{filteredCurves.length}</span> curvas encontradas
+              <span className="text-sm text-gray-600">
+                {filteredAdjustments.length} ajustes encontrados
+              </span>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Content */}
+      {activeView === 'list' && (
+        <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+          {/* Bulk Actions */}
+          {selectedAdjustments.length > 0 && (
+            <div className="bg-blue-50 border-b border-blue-200 px-4 py-3">
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-blue-800">
+                  {selectedAdjustments.length} ajustes seleccionados
+                </span>
+                <button
+                  onClick={handleBulkApprove}
+                  className="bg-blue-600 text-white px-3 py-1 rounded text-sm hover:bg-blue-700"
+                >
+                  Aprobar Seleccionados
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* Table */}
+          <div className="overflow-x-auto">
+            <table className="min-w-full divide-y divide-gray-200">
+              <thead className="bg-gray-50">
+                <tr>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <input
+                      type="checkbox"
+                      checked={selectedAdjustments.length === filteredAdjustments.length && filteredAdjustments.length > 0}
+                      onChange={(e) => {
+                        if (e.target.checked) {
+                          setSelectedAdjustments(filteredAdjustments.map(adj => adj.id));
+                        } else {
+                          setSelectedAdjustments([]);
+                        }
+                      }}
+                      className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                    />
+                  </th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Operación
+                  </th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Ajuste
+                  </th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Período
+                  </th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Estado
+                  </th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Acciones
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="bg-white divide-y divide-gray-200">
+                {filteredAdjustments.map((adjustment) => (
+                  <tr key={adjustment.id} className="hover:bg-gray-50">
+                    <td className="px-4 py-4 whitespace-nowrap">
+                      <input
+                        type="checkbox"
+                        checked={selectedAdjustments.includes(adjustment.id)}
+                        onChange={(e) => {
+                          if (e.target.checked) {
+                            setSelectedAdjustments([...selectedAdjustments, adjustment.id]);
+                          } else {
+                            setSelectedAdjustments(selectedAdjustments.filter(id => id !== adjustment.id));
+                          }
+                        }}
+                        className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                      />
+                    </td>
+                    <td className="px-4 py-4 whitespace-nowrap">
+                      <div className="flex items-center">
+                        <div className="flex-shrink-0 h-10 w-10">
+                          <div className="h-10 w-10 rounded-full bg-gray-200 flex items-center justify-center">
+                            <TrendingDown className="h-5 w-5 text-gray-600" />
+                          </div>
+                        </div>
+                        <div className="ml-3">
+                          <div className="text-sm font-medium text-gray-900">{adjustment.operation}</div>
+                          <div className="text-sm text-gray-500">{adjustment.valueStream} • {adjustment.productionLine} • {adjustment.operationCode}</div>
+                        </div>
+                      </div>
+                    </td>
+                    <td className="px-4 py-4 whitespace-nowrap">
+                      <div className="flex items-center">
+                        <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getImpactColor(adjustment.adjustmentPercentage)}`}>
+                          -{adjustment.adjustmentPercentage}%
+                        </span>
+                      </div>
+                      <div className="text-xs text-gray-500 mt-1">{adjustment.reason}</div>
+                    </td>
+                    <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-900">
+                      <div>{adjustment.effectiveStartDate}</div>
+                      <div className="text-xs text-gray-500">
+                        hasta {adjustment.effectiveEndDate || 'Indefinido'}
+                      </div>
+                    </td>
+                    <td className="px-4 py-4 whitespace-nowrap">
+                      <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor(adjustment.status)}`}>
+                        {adjustment.status === 'active' ? 'Activo' : 
+                         adjustment.status === 'inactive' ? 'Inactivo' : 'Expirado'}
+                      </span>
+                    </td>
+                    <td className="px-4 py-4 whitespace-nowrap text-sm font-medium">
+                      <div className="flex space-x-2">
+                        <button
+                          onClick={() => handleEditAdjustment(adjustment)}
+                          className="text-blue-600 hover:text-blue-900"
+                        >
+                          Editar
+                        </button>
+                        <button
+                          onClick={() => handleDeleteAdjustment(adjustment.id)}
+                          className="text-red-600 hover:text-red-900"
+                        >
+                          Eliminar
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+          {filteredAdjustments.length === 0 && (
+            <div className="text-center py-8">
+              <TrendingDown className="mx-auto h-12 w-12 text-gray-400" />
+              <h3 className="mt-2 text-sm font-medium text-gray-900">No hay ajustes</h3>
+              <p className="mt-1 text-sm text-gray-500">Comienza creando un nuevo ajuste por curva de aprendizaje.</p>
+            </div>
+          )}
+        </div>
+      )}
+
+      {activeView === 'impact' && (
+        <CapacityImpactChart impacts={impacts} />
+      )}
+
+      {activeView === 'stats' && stats && (
+        <div className="bg-white rounded-lg border border-gray-200 p-6">
+          <h3 className="text-lg font-medium text-gray-900 mb-6">Estadísticas Detalladas</h3>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+              <h4 className="text-sm font-medium text-gray-700 mb-3">Distribución por Nivel de Impacto</h4>
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-gray-600">Bajo (&lt;5%)</span>
+                  <span className="text-sm font-medium text-green-600">{stats.impactByLevel.low}</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-gray-600">Medio (5-10%)</span>
+                  <span className="text-sm font-medium text-yellow-600">{stats.impactByLevel.medium}</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-gray-600">Alto (10-15%)</span>
+                  <span className="text-sm font-medium text-orange-600">{stats.impactByLevel.high}</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-gray-600">Crítico (≥15%)</span>
+                  <span className="text-sm font-medium text-red-600">{stats.impactByLevel.critical}</span>
+                </div>
+              </div>
+            </div>
+
+            <div>
+              <h4 className="text-sm font-medium text-gray-700 mb-3">Resumen General</h4>
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-gray-600">Total de Ajustes</span>
+                  <span className="text-sm font-medium text-gray-900">{stats.totalAdjustments}</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-gray-600">Ajustes Activos</span>
+                  <span className="text-sm font-medium text-blue-600">{stats.activeAdjustments}</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-gray-600">Ajuste Promedio</span>
+                  <span className="text-sm font-medium text-yellow-600">{stats.averageAdjustment}%</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-gray-600">Impacto Total en Capacidad</span>
+                  <span className="text-sm font-medium text-red-600">{stats.totalCapacityImpact} unidades/día</span>
+                </div>
               </div>
             </div>
           </div>
         </div>
       )}
 
-      {/* Contenido Principal */}
-      {loading ? (
-        <div className="flex justify-center items-center py-12">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-        </div>
-      ) : (
-        <>
-          {activeView === 'list' && (
-            <div className="bg-white rounded-lg shadow-sm border border-gray-200">
-              <div className="overflow-x-auto">
-                <table className="min-w-full divide-y divide-gray-200">
-                  <thead className="bg-gray-50">
-                    <tr>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        <input
-                          type="checkbox"
-                          checked={selectedCurves.length === filteredCurves.length && filteredCurves.length > 0}
-                          onChange={(e) => {
-                            if (e.target.checked) {
-                              setSelectedCurves(filteredCurves.map(curve => curve.id!));
-                            } else {
-                              setSelectedCurves([]);
-                            }
-                          }}
-                          className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                        />
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Empleado
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Operación
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Eficiencia
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Progreso
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Estado
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Acciones
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody className="bg-white divide-y divide-gray-200">
-                    {filteredCurves.map((curve) => {
-                      const isSelected = selectedCurves.includes(curve.id!);
-                      const progressPercentage = (curve.currentEfficiency / curve.targetEfficiency) * 100;
-                      
-                      return (
-                        <tr key={curve.id} className={isSelected ? 'bg-blue-50' : 'hover:bg-gray-50'}>
-                          <td className="px-6 py-4 whitespace-nowrap">
-                            <input
-                              type="checkbox"
-                              checked={isSelected}
-                              onChange={() => handleCurveSelection(curve.id!)}
-                              className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                            />
-                          </td>
-                          
-                          <td className="px-6 py-4 whitespace-nowrap">
-                            <div className="flex items-center">
-                              <div className="flex-shrink-0 h-10 w-10">
-                                <div className="h-10 w-10 rounded-full bg-gray-200 flex items-center justify-center">
-                                  <User className="w-5 h-5 text-gray-500" />
-                                </div>
-                              </div>
-                              <div className="ml-4">
-                                <div className="text-sm font-medium text-gray-900">
-                                  {curve.employeeName}
-                                </div>
-                                <div className="text-sm text-gray-500">
-                                  {curve.employeeNumber} • {curve.position}
-                                </div>
-                              </div>
-                            </div>
-                          </td>
-                          
-                          <td className="px-6 py-4 whitespace-nowrap">
-                            <div className="text-sm text-gray-900">{curve.operation}</div>
-                            <div className="text-sm text-gray-500">
-                              {curve.valueStream} • {curve.line} • {curve.shift}
-                            </div>
-                          </td>
-                          
-                          <td className="px-6 py-4 whitespace-nowrap">
-                            <div className={`text-sm font-medium ${getEfficiencyColor(curve.currentEfficiency)}`}>
-                              {curve.currentEfficiency}%
-                            </div>
-                            <div className="text-sm text-gray-500">
-                              Target: {curve.targetEfficiency}%
-                            </div>
-                          </td>
-                          
-                          <td className="px-6 py-4 whitespace-nowrap">
-                            <div className="w-full bg-gray-200 rounded-full h-2">
-                              <div
-                                className="bg-blue-600 h-2 rounded-full"
-                                style={{ width: `${Math.min(progressPercentage, 100)}%` }}
-                              ></div>
-                            </div>
-                            <div className="text-xs text-gray-500 mt-1">
-                              {Math.round(progressPercentage)}% completado
-                            </div>
-                          </td>
-                          
-                          <td className="px-6 py-4 whitespace-nowrap">
-                            <div className="flex items-center">
-                              {getStatusIcon(curve.status)}
-                              <span className={`ml-2 inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatusBadge(curve.status)}`}>
-                                {curve.status === 'active' ? 'Activa' :
-                                 curve.status === 'completed' ? 'Completada' :
-                                 curve.status === 'pending' ? 'Pendiente' :
-                                 curve.status === 'on_hold' ? 'En Pausa' : 'Cancelada'}
-                              </span>
-                            </div>
-                          </td>
-                          
-                          <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                            <div className="flex space-x-2">
-                              <button
-                                onClick={() => handleTrackProgress(curve)}
-                                className="text-blue-600 hover:text-blue-900"
-                                title="Seguimiento de progreso"
-                              >
-                                <TrendingUp className="w-4 h-4" />
-                              </button>
-                              <button
-                                onClick={() => handleEditCurve(curve)}
-                                className="text-gray-600 hover:text-gray-900"
-                                title="Editar curva"
-                              >
-                                <Filter className="w-4 h-4" />
-                              </button>
-                            </div>
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          )}
-
-          {activeView === 'impact' && (
-            <CapacityImpactChart impacts={capacityImpacts} />
-          )}
-
-          {activeView === 'statistics' && (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {/* Gráfico de distribución por estado */}
-              <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-                <h4 className="text-lg font-medium text-gray-900 mb-4">
-                  Distribución por Estado
-                </h4>
-                {/* Aquí iría un gráfico de pie chart */}
-                <div className="space-y-3">
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm text-gray-600">Activas</span>
-                    <span className="text-sm font-medium text-blue-600">{statistics.totalActive}</span>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm text-gray-600">Completadas</span>
-                    <span className="text-sm font-medium text-green-600">{statistics.totalCompleted}</span>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm text-gray-600">Pendientes</span>
-                    <span className="text-sm font-medium text-amber-600">{statistics.totalPending}</span>
-                  </div>
-                </div>
-              </div>
-
-              {/* Impacto por Value Stream */}
-              <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-                <h4 className="text-lg font-medium text-gray-900 mb-4">
-                  Impacto por Value Stream
-                </h4>
-                <div className="space-y-3">
-                  {capacityImpacts.slice(0, 5).map((impact, index) => (
-                    <div key={index} className="flex justify-between items-center">
-                      <span className="text-sm text-gray-600">
-                        {impact.valueStream} {impact.shift}
-                      </span>
-                      <span className="text-sm font-medium text-red-600">
-                        -{impact.capacityImpact}%
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
-          )}
-        </>
-      )}
-
-      {/* Modales */}
-      {showCurveModal && (
-        <TrainingCurveModal
-          curve={editingCurve}
-          onSave={handleSaveCurve}
-          onCancel={() => {
-            setShowCurveModal(false);
-            setEditingCurve(null);
+      {/* Modal */}
+      {showModal && (
+        <LearningCurveModal
+          isOpen={showModal}
+          onClose={() => {
+            setShowModal(false);
+            setEditingAdjustment(null);
           }}
-        />
-      )}
-
-      {showProgressModal && editingCurve && (
-        <ProgressTrackingModal
-          curve={editingCurve}
-          onSave={async (progress: Omit<TrainingProgress, 'week'>) => {
-            await trainingCurveService.addWeeklyProgress(editingCurve.id!, progress);
-            await loadTrainingData();
-            setShowProgressModal(false);
-            setEditingCurve(null);
-            onSave();
-          }}
-          onCancel={() => {
-            setShowProgressModal(false);
-            setEditingCurve(null);
-          }}
+          onSave={handleSaveAdjustment}
+          adjustment={editingAdjustment}
         />
       )}
     </div>
