@@ -49,10 +49,13 @@ export interface CalendarDay {
   id?: string;
   date: Date;
   isWorkingDay: boolean;
+  workingHours: number; // Horas laborables del día (0, 4, 8, 12, etc.)
+  standardHours: number; // Horas estándar para este tipo de día (8 para días normales, 4 para sábados)
   description?: string;
   valueStream?: string;
   approvedBy?: string;
   status: 'pending' | 'approved' | 'rejected';
+  dayType: 'weekday' | 'saturday' | 'sunday' | 'holiday' | 'special';
   createdAt?: string;
   updatedAt?: string;
 }
@@ -73,16 +76,22 @@ export interface ImportLog {
 export interface EnhancedDowntime {
   id: string;
   type: 'standard' | 'special';
-  category: 'tier' | 'setup' | 'ergonomic' | 'validation' | 'material_change' | 'training';
-  duration: number;
+  category: 'tier' | 'setup' | 'ergonomic' | 'validation' | 'material_change' | 'training' | 'maintenance';
+  date: Date;
+  startTime?: string;
+  endTime?: string;
+  hours: number;
+  reason: string;
   description: string;
-  requiresApproval: boolean;
   valueStream?: string;
   line?: string;
-  date?: string;
+  area: string;
+  status: 'pending' | 'approved' | 'rejected';
   approvedBy?: string;
   approvedAt?: string;
-  status: 'pending' | 'approved' | 'rejected';
+  impact: 'low' | 'medium' | 'high';
+  recurrent: boolean;
+  frequency?: 'daily' | 'weekly' | 'monthly' | 'quarterly';
 }
 
 export interface TrainingCurve {
@@ -152,4 +161,18 @@ export interface InputReviewStatusExtended {
   calendarDays: ExtendedStatusItem;
   trainingCurves: ExtendedStatusItem;
   lotChanges: ExtendedStatusItem;
+}
+
+export interface CalendarConfiguration {
+  standardWorkingHours: number; // Horas estándar de trabajo (ej: 8)
+  saturdayHours: number; // Horas de trabajo los sábados (ej: 4)
+  sundayHours: number; // Horas de trabajo los domingos (ej: 0)
+  holidayHours: number; // Horas de trabajo en feriados (ej: 0)
+  valueStreamSpecific: {
+    [valueStream: string]: {
+      standardHours: number;
+      saturdayHours: number;
+      sundayHours: number;
+    };
+  };
 }
