@@ -1,5 +1,5 @@
 import React from 'react';
-import { Check, AlertTriangle, ChartBar, Calendar, FileText, Users } from 'lucide-react';
+import { Check, AlertTriangle, ChartBar, Calendar, FileText, Users, TrendingUp } from 'lucide-react';
 
 interface StatusItem {
   complete: boolean;
@@ -50,6 +50,7 @@ const TabNavigation: React.FC<TabNavigationProps> = ({
           }`}
           onClick={() => setActiveTab('runRates')}
         >
+          <TrendingUp className="inline-block w-4 h-4 mr-1" />
           Run Rates
           {!status.runRates?.complete && <AlertTriangle className="inline-block w-4 h-4 ml-1 text-amber-500" />}
           {status.runRates?.complete && <Check className="inline-block w-4 h-4 ml-1 text-green-500" />}

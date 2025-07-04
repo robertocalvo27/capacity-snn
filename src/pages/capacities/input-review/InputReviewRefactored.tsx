@@ -19,6 +19,7 @@ import SummaryTab from './components/Summary/SummaryTab';
 import CalendarDaysTab from './components/Calendar/CalendarDaysTab';
 import ImportHistoryTab from './components/ImportHistory/ImportHistoryTab';
 import TrainingCurvesTab from './components/TrainingCurves/TrainingCurvesTab';
+import RunRatesTab from './components/RunRates/RunRatesTab';
 
 // Datos mock
 import { inputReviewStatus, tabData, approvalLogs, StatusItem } from './data/mockData';
@@ -199,6 +200,22 @@ const InputReviewRefactored: React.FC = () => {
     });
   };
 
+  // Manejadores para Run Rates
+  const handleRunRatesSave = () => {
+    showSuccessNotification('Se han guardado correctamente las configuraciones de Run Rates.');
+    
+    // Actualizar estado de revisión
+    const updatedStatus: StatusItem = { 
+      complete: true, 
+      date: new Date().toISOString().split('T')[0] 
+    };
+    
+    setReviewStatus({
+      ...reviewStatus,
+      runRates: updatedStatus
+    });
+  };
+
   // Renderizar la pestaña activa
   const renderActiveTab = () => {
     switch (activeTab) {
@@ -240,7 +257,12 @@ const InputReviewRefactored: React.FC = () => {
           />
         );
       case 'runRates':
-        return <div>Contenido de Run Rates (pendiente)</div>;
+        return (
+          <RunRatesTab
+            onSave={handleRunRatesSave}
+            selectedValueStream={selectedValueStream}
+          />
+        );
       case 'calendarDays':
         return (
           <CalendarDaysTab
