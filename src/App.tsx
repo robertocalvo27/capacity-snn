@@ -19,6 +19,7 @@ import MonthDetail from './pages/capacities/MonthDetail';
 import VSTDetail from './pages/capacities/VSTDetail';
 import UsageRoadster from './pages/capacities/usage/UsageRoadster';
 import InputReview from './pages/capacities/input-review/InputReview';
+import HandShake from './pages/capacities/handshake/HandShake';
 import CBPFinalSummary from './pages/capacities/CBPFinalSummary';
 
 // Usuario de prueba
@@ -72,6 +73,7 @@ export default function App() {
           <Route path="/capacities" element={<CapacityModelPage />} />
           <Route path="/capacities/:cbpId" element={<MonthDetail />} />
           <Route path="/capacities/input-review/:cbpId" element={<InputReview />} />
+          <Route path="/capacities/handshake/:cbpId" element={<HandShake />} />
           <Route path="/capacities/:cbpId/:vstId" element={<VSTDetail />} />
           <Route path="/capacities/:cbpId/roadster/usage" element={<UsageRoadster />} />
           <Route path="/capacities/cbp-summary/:cbpId" element={<CBPFinalSummary />} />

@@ -205,3 +205,93 @@ export interface CalendarConfiguration {
     };
   };
 }
+
+// HandShake Types - Proceso de acuerdo entre Producción y Planeación
+export interface HandShakeApproval {
+  id: string;
+  approverRole: 'production_director' | 'planning_director';
+  approverName: string;
+  approverEmail: string;
+  approved: boolean;
+  approvedAt?: string;
+  comments?: string;
+  conditions?: string[];
+  concerns?: string[];
+}
+
+export interface VST_HandShakeData {
+  id: string;
+  name: string;
+  demandHours: number;
+  capacityHours: number;
+  utilizationPercentage: number;
+  efficiency: number;
+  status: 'pending' | 'approved' | 'rejected' | 'conditional';
+  approvals: HandShakeApproval[];
+  concerns: HandShakeConcern[];
+  agreements: HandShakeAgreement[];
+  lastUpdated: string;
+}
+
+export interface HandShakeConcern {
+  id: string;
+  type: 'capacity' | 'resource' | 'timeline' | 'quality' | 'other';
+  description: string;
+  severity: 'low' | 'medium' | 'high' | 'critical';
+  raisedBy: 'production_director' | 'planning_director';
+  raisedAt: string;
+  status: 'open' | 'addressed' | 'resolved' | 'dismissed';
+  resolution?: string;
+  resolvedAt?: string;
+  resolvedBy?: string;
+}
+
+export interface HandShakeAgreement {
+  id: string;
+  description: string;
+  type: 'commitment' | 'condition' | 'assumption' | 'constraint';
+  agreedBy: ('production_director' | 'planning_director')[];
+  agreedAt: string;
+  reviewDate?: string;
+  active: boolean;
+}
+
+export interface HandShakeSession {
+  id: string;
+  cbpId: string;
+  status: 'draft' | 'in_review' | 'approved' | 'rejected' | 'conditional';
+  createdAt: string;
+  startedAt?: string;
+  completedAt?: string;
+  vstData: VST_HandShakeData[];
+  globalAgreements: HandShakeAgreement[];
+  meetingNotes?: string;
+  nextSteps?: string[];
+  escalations?: string[];
+  finalSignoff?: {
+    productionDirector?: HandShakeApproval;
+    planningDirector?: HandShakeApproval;
+  };
+}
+
+export interface HandShakeStatusItem {
+  vstReviewed: boolean;
+  agreementsReached: boolean;
+  concernsAddressed: boolean;
+  approvalsReceived: boolean;
+  finalSignoffComplete: boolean;
+}
+
+export interface HandShakeMetrics {
+  totalVSTs: number;
+  vstsPendingReview: number;
+  vstsApproved: number;
+  vstsWithConcerns: number;
+  openConcerns: number;
+  totalAgreements: number;
+  utilizationRange: {
+    min: number;
+    max: number;
+    average: number;
+  };
+}
