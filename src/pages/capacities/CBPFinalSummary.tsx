@@ -20,7 +20,8 @@ import {
   ClipboardList,
   Target,
   Activity,
-  BarChart2
+  BarChart2,
+  BarChart
 } from 'lucide-react';
 
 // Tipos para la estructura de datos expandida
@@ -1203,6 +1204,7 @@ type DisplayView = 'summary' | 'detailed' | 'analytics';
 type PlanType = 'bp' | 'cbp' | 'actuals' | 'summary';
 type SummaryMode = 'constrained-vs-unconstrained' | 'actuals-vs-cbp' | 'capacity-utilization' | 'forecast';
 type PeriodType = 'months' | 'weeks' | 'quarters';
+type DetailViewType = 'table' | 'chart';
 
 export default function CBPFinalSummary() {
   const { cbpId } = useParams();
@@ -1213,6 +1215,8 @@ export default function CBPFinalSummary() {
   const [summaryMode, setSummaryMode] = useState<SummaryMode>('constrained-vs-unconstrained');
   const [periodType, setPeriodType] = useState<PeriodType>('months');
   const [expandedVST, setExpandedVST] = useState<string | null>(null);
+  const [expandedVSTInSummary, setExpandedVSTInSummary] = useState<string | null>(null);
+  const [detailViewType, setDetailViewType] = useState<DetailViewType>('table');
   const [searchFilter, setSearchFilter] = useState('');
   const [hiddenVSTs, setHiddenVSTs] = useState<Set<string>>(new Set());
   const [dateRange, setDateRange] = useState<{ start: string; end: string }>({
@@ -1401,6 +1405,15 @@ export default function CBPFinalSummary() {
       newHidden.add(vstId);
     }
     setHiddenVSTs(newHidden);
+  };
+
+  // Toggle detalle expandido en Summary
+  const toggleVSTDetailInSummary = (vstId: string) => {
+    if (expandedVSTInSummary === vstId) {
+      setExpandedVSTInSummary(null);
+    } else {
+      setExpandedVSTInSummary(vstId);
+    }
   };
 
   // Función para exportar datos
@@ -1825,9 +1838,9 @@ export default function CBPFinalSummary() {
                       )}
                     </div>
                   </th>
-                  {filteredPeriods.map(month => (
-                    <th key={month} className="px-6 py-4 text-center text-sm font-medium">
-                      {month}
+                  {filteredPeriods.map(period => (
+                    <th key={period} className="px-6 py-4 text-center text-sm font-medium">
+                      {period}
                     </th>
                   ))}
                   <th className="px-6 py-4 text-center text-sm font-medium">Actions</th>
@@ -1839,28 +1852,40 @@ export default function CBPFinalSummary() {
                   .map((vst, index) => (
                     <tr 
                       key={vst.id} 
-                      className={`hover:bg-gray-50 ${vst.isTotal ? 'bg-gray-100 font-semibold border-t-2 border-gray-300' : ''}`}
+                      className={`${vst.isTotal ? 'bg-gray-100 font-semibold border-t-2 border-gray-300' : 'hover:bg-gray-50'} ${
+                        !vst.isTotal && vst.products.length > 0 ? 'cursor-pointer' : ''
+                      } ${expandedVSTInSummary === vst.id ? 'bg-blue-50' : ''}`}
+                      onClick={() => {
+                        if (!vst.isTotal && vst.products.length > 0) {
+                          toggleVSTDetailInSummary(vst.id);
+                        }
+                      }}
                     >
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
                         <div className="flex items-center">
                           {vst.isTotal && <span className="text-gray-500 mr-2">∑</span>}
                           {vst.name}
+                          {!vst.isTotal && vst.products.length > 0 && (
+                            <span className="ml-2 text-xs text-gray-500">
+                              ({vst.products.length} productos)
+                            </span>
+                          )}
                         </div>
                       </td>
-                      {filteredPeriods.map(month => {
+                      {filteredPeriods.map(period => {
                         const data = getDataByMode(vst);
-                        const value = data[month] || 0;
+                        const value = data[period] || 0;
                         
                         // Para Summary con comparaciones específicas
                         if (planType === 'summary') {
                           const summaryData = calculateSummaryData(vst);
                           
                           if (summaryMode === 'constrained-vs-unconstrained') {
-                            const unconstrainedValue = summaryData.unconstrained[month] || 0;
-                            const constrainedValue = summaryData.constrained[month] || 0;
+                            const unconstrainedValue = summaryData.unconstrained[period] || 0;
+                            const constrainedValue = summaryData.constrained[period] || 0;
                             
                             return (
-                              <td key={month} className="px-6 py-4 whitespace-nowrap text-sm text-center">
+                              <td key={period} className="px-6 py-4 whitespace-nowrap text-sm text-center">
                                 <div className="space-y-1">
                                   <div className="text-gray-600 text-xs">USP:</div>
                                   <div className="font-medium text-blue-600">
@@ -1876,11 +1901,11 @@ export default function CBPFinalSummary() {
                           }
                           
                           if (summaryMode === 'actuals-vs-cbp') {
-                            const actualsValue = summaryData.actuals[month] || 0;
-                            const cbpValue = summaryData.constrained[month] || 0;
+                            const actualsValue = summaryData.actuals[period] || 0;
+                            const cbpValue = summaryData.constrained[period] || 0;
                             
                             return (
-                              <td key={month} className="px-6 py-4 whitespace-nowrap text-sm text-center">
+                              <td key={period} className="px-6 py-4 whitespace-nowrap text-sm text-center">
                                 <div className="space-y-1">
                                   <div className="text-gray-600 text-xs">Actuals:</div>
                                   <div className="font-medium text-purple-600">
@@ -1897,7 +1922,7 @@ export default function CBPFinalSummary() {
                         }
                         
                         return (
-                          <td key={month} className="px-6 py-4 whitespace-nowrap text-sm text-center">
+                          <td key={period} className="px-6 py-4 whitespace-nowrap text-sm text-center">
                             <span className={getValueColor(value, viewMode)}>
                               {formatValue(value)}
                             </span>
@@ -1907,14 +1932,20 @@ export default function CBPFinalSummary() {
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-center">
                         <div className="flex items-center justify-center space-x-2">
                           <button
-                            onClick={() => toggleVSTVisibility(vst.id)}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              toggleVSTVisibility(vst.id);
+                            }}
                             className="text-gray-400 hover:text-gray-600"
                           >
                             <EyeOff className="w-4 h-4" />
                           </button>
                           {vst.products.length > 0 && (
                             <button
-                              onClick={() => setExpandedVST(expandedVST === vst.id ? null : vst.id)}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setExpandedVST(expandedVST === vst.id ? null : vst.id);
+                              }}
                               className="text-blue-600 hover:text-blue-800"
                             >
                               {expandedVST === vst.id ? (
@@ -1930,6 +1961,380 @@ export default function CBPFinalSummary() {
                   ))}
               </tbody>
             </table>
+            
+            {/* Detalle expandido en Summary */}
+            {expandedVSTInSummary && (
+              <div className="mt-6 border-t-2 border-blue-200 pt-6">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-lg font-semibold text-gray-900">
+                    Detalle de {filteredVSTs.find(vst => vst.id === expandedVSTInSummary)?.name}
+                  </h3>
+                  <div className="flex items-center space-x-4">
+                    {/* Toggle Vista */}
+                    <div className="flex bg-gray-100 rounded-lg p-1">
+                      <button
+                        onClick={() => setDetailViewType('table')}
+                        className={`flex items-center px-3 py-2 rounded-md text-sm font-medium ${
+                          detailViewType === 'table'
+                            ? 'bg-white text-blue-600 shadow-sm'
+                            : 'text-gray-600 hover:text-gray-900'
+                        }`}
+                      >
+                        <Table className="w-4 h-4 mr-1" />
+                        Tabla
+                      </button>
+                      <button
+                        onClick={() => setDetailViewType('chart')}
+                        className={`flex items-center px-3 py-2 rounded-md text-sm font-medium ${
+                          detailViewType === 'chart'
+                            ? 'bg-white text-blue-600 shadow-sm'
+                            : 'text-gray-600 hover:text-gray-900'
+                        }`}
+                      >
+                        <BarChart className="w-4 h-4 mr-1" />
+                        Gráfico
+                      </button>
+                    </div>
+                    <button
+                      onClick={() => setExpandedVSTInSummary(null)}
+                      className="text-gray-500 hover:text-gray-700"
+                    >
+                      <ChevronUp className="w-5 h-5" />
+                    </button>
+                  </div>
+                </div>
+                
+                {/* Contenido del detalle */}
+                {detailViewType === 'table' ? (
+                  <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+                    <div className="overflow-x-auto">
+                      <table className="w-full">
+                        <thead className="bg-gray-50">
+                          <tr>
+                            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                              Line #
+                            </th>
+                            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                              Line Name
+                            </th>
+                            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                              Catalog #
+                            </th>
+                            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                              FA
+                            </th>
+                            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                              Description
+                            </th>
+                            {filteredPeriods.map(period => (
+                              <th key={period} className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                {period}
+                              </th>
+                            ))}
+                          </tr>
+                        </thead>
+                        <tbody className="bg-white divide-y divide-gray-200">
+                          {filteredVSTs
+                            .find(vst => vst.id === expandedVSTInSummary)
+                            ?.products.map((product, index) => (
+                              <tr key={index} className="hover:bg-gray-50">
+                                <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900">
+                                  {product.lineNumber}
+                                </td>
+                                <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900">
+                                  {product.lineName}
+                                </td>
+                                <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900">
+                                  {product.catalogNumber}
+                                </td>
+                                <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900">
+                                  {product.fa}
+                                </td>
+                                <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900">
+                                  {product.description}
+                                </td>
+                                {filteredPeriods.map(period => {
+                                  const planData = viewMode === 'efficiency' ? product.efficiency : 
+                                                  viewMode === 'absorption' ? product.absorption : product.production;
+                                  
+                                  // Para Summary con comparaciones específicas en productos
+                                  if (planType === 'summary') {
+                                    if (summaryMode === 'constrained-vs-unconstrained') {
+                                      const unconstrainedData = generatePeriodData(planData.bp, periodType);
+                                      const constrainedData = generatePeriodData(planData.cbp, periodType);
+                                      const unconstrainedValue = unconstrainedData[period] || 0;
+                                      const constrainedValue = constrainedData[period] || 0;
+                                      
+                                      return (
+                                        <td key={period} className="px-4 py-3 whitespace-nowrap text-sm text-center">
+                                          <div className="space-y-1">
+                                            <div className="text-gray-600 text-xs">USP:</div>
+                                            <div className="font-medium text-blue-600 text-xs">
+                                              {formatValue(unconstrainedValue)}
+                                            </div>
+                                            <div className="text-gray-600 text-xs">CSP:</div>
+                                            <div className="font-medium text-green-600 text-xs">
+                                              {formatValue(constrainedValue)}
+                                            </div>
+                                          </div>
+                                        </td>
+                                      );
+                                    }
+                                    
+                                    if (summaryMode === 'actuals-vs-cbp') {
+                                      const actualsData = generatePeriodData(planData.actuals, periodType);
+                                      const cbpData = generatePeriodData(planData.cbp, periodType);
+                                      const actualsValue = actualsData[period] || 0;
+                                      const cbpValue = cbpData[period] || 0;
+                                      
+                                      return (
+                                        <td key={period} className="px-4 py-3 whitespace-nowrap text-sm text-center">
+                                          <div className="space-y-1">
+                                            <div className="text-gray-600 text-xs">Actuals:</div>
+                                            <div className="font-medium text-purple-600 text-xs">
+                                              {formatValue(actualsValue)}
+                                            </div>
+                                            <div className="text-gray-600 text-xs">CBP:</div>
+                                            <div className="font-medium text-green-600 text-xs">
+                                              {formatValue(cbpValue)}
+                                            </div>
+                                          </div>
+                                        </td>
+                                      );
+                                    }
+                                  }
+                                  
+                                  // Para otros casos, usar getPeriodData
+                                  const data = getPeriodData(planData, planType);
+                                  let value = data[period] || 0;
+                                  
+                                  // Para casos especiales de Summary
+                                  if (planType === 'summary') {
+                                    if (summaryMode === 'capacity-utilization') {
+                                      const actualsData = generatePeriodData(planData.actuals, periodType);
+                                      const cbpData = generatePeriodData(planData.cbp, periodType);
+                                      const actualValue = actualsData[period] || 0;
+                                      const cbpValue = cbpData[period] || 0;
+                                      value = cbpValue > 0 && actualValue > 0 ? (actualValue / cbpValue) * 100 : 0;
+                                    } else if (summaryMode === 'forecast') {
+                                      const actualsData = generatePeriodData(planData.actuals, periodType);
+                                      const cbpData = generatePeriodData(planData.cbp, periodType);
+                                      const actualValue = actualsData[period] || 0;
+                                      const cbpValue = cbpData[period] || 0;
+                                      value = actualValue > 0 ? actualValue : cbpValue;
+                                    }
+                                  }
+                                  
+                                  return (
+                                    <td key={period} className="px-4 py-3 whitespace-nowrap text-sm text-center">
+                                      <span className={getValueColor(value, viewMode)}>
+                                        {formatValue(value)}
+                                      </span>
+                                    </td>
+                                  );
+                                })}
+                              </tr>
+                            ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="bg-white rounded-lg border border-gray-200 p-6">
+                    <div className="space-y-6">
+                      {/* Gráfico de barras */}
+                      <div className="space-y-4">
+                        {filteredVSTs
+                          .find(vst => vst.id === expandedVSTInSummary)
+                          ?.products.map((product, index) => {
+                            const planData = viewMode === 'efficiency' ? product.efficiency : 
+                                            viewMode === 'absorption' ? product.absorption : product.production;
+                            
+                            // Calcular valores para cada período
+                            const values = filteredPeriods.map(period => {
+                              if (planType === 'summary') {
+                                if (summaryMode === 'constrained-vs-unconstrained') {
+                                  const unconstrainedData = generatePeriodData(planData.bp, periodType);
+                                  const constrainedData = generatePeriodData(planData.cbp, periodType);
+                                  return {
+                                    period,
+                                    unconstrained: unconstrainedData[period] || 0,
+                                    constrained: constrainedData[period] || 0
+                                  };
+                                }
+                                
+                                if (summaryMode === 'actuals-vs-cbp') {
+                                  const actualsData = generatePeriodData(planData.actuals, periodType);
+                                  const cbpData = generatePeriodData(planData.cbp, periodType);
+                                  return {
+                                    period,
+                                    actuals: actualsData[period] || 0,
+                                    cbp: cbpData[period] || 0
+                                  };
+                                }
+                              }
+                              
+                              const data = getPeriodData(planData, planType);
+                              let value = data[period] || 0;
+                              
+                              if (planType === 'summary') {
+                                if (summaryMode === 'capacity-utilization') {
+                                  const actualsData = generatePeriodData(planData.actuals, periodType);
+                                  const cbpData = generatePeriodData(planData.cbp, periodType);
+                                  const actualValue = actualsData[period] || 0;
+                                  const cbpValue = cbpData[period] || 0;
+                                  value = cbpValue > 0 && actualValue > 0 ? (actualValue / cbpValue) * 100 : 0;
+                                } else if (summaryMode === 'forecast') {
+                                  const actualsData = generatePeriodData(planData.actuals, periodType);
+                                  const cbpData = generatePeriodData(planData.cbp, periodType);
+                                  const actualValue = actualsData[period] || 0;
+                                  const cbpValue = cbpData[period] || 0;
+                                  value = actualValue > 0 ? actualValue : cbpValue;
+                                }
+                              }
+                              
+                              return { period, value };
+                            });
+                            
+                            // Obtener el valor máximo para escalar las barras
+                            const maxValue = Math.max(...values.map(v => 
+                              'value' in v ? (v.value || 0) : 
+                              'unconstrained' in v ? Math.max(v.unconstrained || 0, v.constrained || 0) :
+                              'actuals' in v ? Math.max(v.actuals || 0, v.cbp || 0) : 0
+                            ));
+                            
+                            return (
+                              <div key={index} className="border-b border-gray-200 pb-4 last:border-b-0">
+                                <div className="flex items-center justify-between mb-3">
+                                  <div>
+                                    <h4 className="font-medium text-gray-900">
+                                      {product.lineName} - {product.catalogNumber}
+                                    </h4>
+                                    <p className="text-sm text-gray-500">{product.description}</p>
+                                  </div>
+                                  <div className="text-right">
+                                    <div className="text-sm text-gray-500">Line {product.lineNumber}</div>
+                                    <div className="text-xs text-gray-400">FA: {product.fa}</div>
+                                  </div>
+                                </div>
+                                
+                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
+                                  {values.map((item, periodIndex) => {
+                                    if ('value' in item) {
+                                      const itemValue = item.value || 0;
+                                      const percentage = maxValue > 0 ? (itemValue / maxValue) * 100 : 0;
+                                      return (
+                                        <div key={periodIndex} className="bg-gray-50 rounded-lg p-3">
+                                          <div className="text-xs font-medium text-gray-700 mb-2">
+                                            {item.period}
+                                          </div>
+                                          <div className="bg-gray-200 rounded-full h-3 mb-1">
+                                            <div 
+                                              className="bg-blue-500 h-3 rounded-full transition-all duration-300"
+                                              style={{ width: `${percentage}%` }}
+                                            />
+                                          </div>
+                                          <div className="text-xs text-gray-600 text-center">
+                                            {formatValue(itemValue)}
+                                          </div>
+                                        </div>
+                                      );
+                                    }
+                                    
+                                    if ('unconstrained' in item) {
+                                      const unconstrainedValue = item.unconstrained || 0;
+                                      const constrainedValue = item.constrained || 0;
+                                      const unPercentage = maxValue > 0 ? (unconstrainedValue / maxValue) * 100 : 0;
+                                      const conPercentage = maxValue > 0 ? (constrainedValue / maxValue) * 100 : 0;
+                                      
+                                      return (
+                                        <div key={periodIndex} className="bg-gray-50 rounded-lg p-3">
+                                          <div className="text-xs font-medium text-gray-700 mb-2">
+                                            {item.period}
+                                          </div>
+                                          <div className="space-y-2">
+                                            <div>
+                                              <div className="text-xs text-gray-600 mb-1">USP:</div>
+                                              <div className="bg-gray-200 rounded-full h-2 mb-1">
+                                                <div 
+                                                  className="bg-blue-500 h-2 rounded-full transition-all duration-300"
+                                                  style={{ width: `${unPercentage}%` }}
+                                                />
+                                              </div>
+                                              <div className="text-xs text-blue-600 font-medium">
+                                                {formatValue(unconstrainedValue)}
+                                              </div>
+                                            </div>
+                                            <div>
+                                              <div className="text-xs text-gray-600 mb-1">CSP:</div>
+                                              <div className="bg-gray-200 rounded-full h-2 mb-1">
+                                                <div 
+                                                  className="bg-green-500 h-2 rounded-full transition-all duration-300"
+                                                  style={{ width: `${conPercentage}%` }}
+                                                />
+                                              </div>
+                                              <div className="text-xs text-green-600 font-medium">
+                                                {formatValue(constrainedValue)}
+                                              </div>
+                                            </div>
+                                          </div>
+                                        </div>
+                                      );
+                                    }
+                                    
+                                    if ('actuals' in item) {
+                                      const actualsValue = item.actuals || 0;
+                                      const cbpValue = item.cbp || 0;
+                                      const actPercentage = maxValue > 0 ? (actualsValue / maxValue) * 100 : 0;
+                                      const cbpPercentage = maxValue > 0 ? (cbpValue / maxValue) * 100 : 0;
+                                      
+                                      return (
+                                        <div key={periodIndex} className="bg-gray-50 rounded-lg p-3">
+                                          <div className="text-xs font-medium text-gray-700 mb-2">
+                                            {item.period}
+                                          </div>
+                                          <div className="space-y-2">
+                                            <div>
+                                              <div className="text-xs text-gray-600 mb-1">Actuals:</div>
+                                              <div className="bg-gray-200 rounded-full h-2 mb-1">
+                                                <div 
+                                                  className="bg-purple-500 h-2 rounded-full transition-all duration-300"
+                                                  style={{ width: `${actPercentage}%` }}
+                                                />
+                                              </div>
+                                              <div className="text-xs text-purple-600 font-medium">
+                                                {formatValue(actualsValue)}
+                                              </div>
+                                            </div>
+                                            <div>
+                                              <div className="text-xs text-gray-600 mb-1">CBP:</div>
+                                              <div className="bg-gray-200 rounded-full h-2 mb-1">
+                                                <div 
+                                                  className="bg-green-500 h-2 rounded-full transition-all duration-300"
+                                                  style={{ width: `${cbpPercentage}%` }}
+                                                />
+                                              </div>
+                                              <div className="text-xs text-green-600 font-medium">
+                                                {formatValue(cbpValue)}
+                                              </div>
+                                            </div>
+                                          </div>
+                                        </div>
+                                      );
+                                    }
+                                    
+                                    return null;
+                                  })}
+                                </div>
+                              </div>
+                            );
+                          })}
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         )}
 
