@@ -19,6 +19,7 @@ import MonthDetail from './pages/capacities/MonthDetail';
 import VSTDetail from './pages/capacities/VSTDetail';
 import UsageRoadster from './pages/capacities/usage/UsageRoadster';
 import InputReview from './pages/capacities/input-review/InputReview';
+import HandShake from './pages/capacities/handshake/HandShake';
 
 // Usuario de prueba
 const testUser: User = {
@@ -71,6 +72,7 @@ export default function App() {
           <Route path="/capacities" element={<CapacityModelPage />} />
           <Route path="/capacities/:cbpId" element={<MonthDetail />} />
           <Route path="/capacities/input-review/:cbpId" element={<InputReview />} />
+          <Route path="/capacities/handshake/:cbpId" element={<HandShake />} />
           <Route path="/capacities/:cbpId/:vstId" element={<VSTDetail />} />
           <Route path="/capacities/:cbpId/roadster/usage" element={<UsageRoadster />} />
           {DebugRoutes}
