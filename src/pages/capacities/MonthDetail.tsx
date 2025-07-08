@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ChevronDown, ChevronUp, Eye, Calendar, ClipboardCheck, Users, Sliders, BarChart3, FileCheck, BarChart2, Factory, AlertTriangle } from 'lucide-react';
+import { ChevronDown, ChevronUp, Eye, Calendar, ClipboardCheck, Users, Sliders, BarChart3, FileCheck, BarChart2, Factory, AlertTriangle, Package, Percent, DollarSign } from 'lucide-react';
 
 const mockVSTs = [
   {
@@ -471,10 +471,10 @@ export default function CapacityMonthDetail() {
             <div className="flex items-center space-x-4">
               <div className="text-right">
                 <div className="text-sm text-gray-500">
-                  Estado: <span className="font-semibold text-amber-600">Bloqueado</span>
+                  Estado: <span className="font-semibold text-green-600">Disponible</span>
                 </div>
                 <div className="text-sm text-gray-500">
-                  Pendiente Hand Shake
+                  Resumen completo listo
                 </div>
               </div>
               {expanded === 'cbp-summary' ? (
@@ -489,15 +489,54 @@ export default function CapacityMonthDetail() {
               <div className="mb-4">
                 <h4 className="font-medium text-gray-900 mb-2">Resumen Ejecutivo</h4>
                 <p className="text-sm text-gray-700 mb-4">
-                  El resumen ejecutivo del CBP incluye los indicadores clave de capacidad, eficiencia y producción por Value Stream. Se desbloquea una vez completado el proceso de Hand Shake.
+                  El resumen ejecutivo del CBP incluye los indicadores clave de capacidad, eficiencia y producción por Value Stream. Visualiza datos de producción, eficiencia y absorción con opciones de análisis detallado.
                 </p>
+                
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                  <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
+                    <div className="flex items-center">
+                      <div className="p-2 rounded-full bg-blue-100 text-blue-600">
+                        <Package className="w-5 h-5" />
+                      </div>
+                      <div className="ml-3">
+                        <h5 className="font-medium text-gray-900">Producción</h5>
+                        <p className="text-sm text-gray-500">Unidades por VST y línea</p>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div className="bg-green-50 p-4 rounded-lg border border-green-200">
+                    <div className="flex items-center">
+                      <div className="p-2 rounded-full bg-green-100 text-green-600">
+                        <Percent className="w-5 h-5" />
+                      </div>
+                      <div className="ml-3">
+                        <h5 className="font-medium text-gray-900">Eficiencia</h5>
+                        <p className="text-sm text-gray-500">% de cumplimiento</p>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div className="bg-purple-50 p-4 rounded-lg border border-purple-200">
+                    <div className="flex items-center">
+                      <div className="p-2 rounded-full bg-purple-100 text-purple-600">
+                        <DollarSign className="w-5 h-5" />
+                      </div>
+                      <div className="ml-3">
+                        <h5 className="font-medium text-gray-900">Absorción</h5>
+                        <p className="text-sm text-gray-500">Costos absorbidos</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
                 
                 <div className="flex justify-end mt-4">
                   <button 
-                    className="px-4 py-2 bg-gray-400 text-white rounded-lg cursor-not-allowed"
-                    disabled
+                    className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 flex items-center"
+                    onClick={() => navigate(`/capacities/cbp-summary/${cbpId}`)}
                   >
-                    Ver Resumen
+                    <BarChart3 className="w-4 h-4 mr-2" />
+                    Ver Resumen Ejecutivo
                   </button>
                 </div>
               </div>

@@ -20,6 +20,7 @@ import VSTDetail from './pages/capacities/VSTDetail';
 import UsageRoadster from './pages/capacities/usage/UsageRoadster';
 import InputReview from './pages/capacities/input-review/InputReview';
 import HandShake from './pages/capacities/handshake/HandShake';
+import CBPFinalSummary from './pages/capacities/CBPFinalSummary';
 
 // Usuario de prueba
 const testUser: User = {
@@ -75,6 +76,7 @@ export default function App() {
           <Route path="/capacities/handshake/:cbpId" element={<HandShake />} />
           <Route path="/capacities/:cbpId/:vstId" element={<VSTDetail />} />
           <Route path="/capacities/:cbpId/roadster/usage" element={<UsageRoadster />} />
+          <Route path="/capacities/cbp-summary/:cbpId" element={<CBPFinalSummary />} />
           {DebugRoutes}
         </Routes>
       </Layout>
