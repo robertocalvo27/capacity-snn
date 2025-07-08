@@ -15,7 +15,7 @@ import SignoffTab from './components/Signoff/SignoffTab';
 import SummaryTab from './components/Summary/SummaryTab';
 
 // Datos mock y tipos
-import { handShakeData, handShakeStatus, HandShakeStatusItem } from './data/mockData';
+import { handShakeData, handShakeStatus as initialHandShakeStatus, HandShakeStatusItem } from './data/mockData';
 import type { HandShakeSession, VST_HandShakeData, HandShakeApproval, HandShakeConcern, HandShakeAgreement } from '../../../types/capacity';
 
 const HandShake: React.FC = () => {
@@ -24,7 +24,7 @@ const HandShake: React.FC = () => {
 
   // Estados generales
   const [activeTab, setActiveTab] = useState<string>('vstReview');
-  const [handShakeStatus, setHandShakeStatus] = useState<HandShakeStatusItem>(handShakeStatus);
+  const [handShakeStatus, setHandShakeStatus] = useState<HandShakeStatusItem>(initialHandShakeStatus);
   const [showNotification, setShowNotification] = useState<boolean>(false);
   const [notificationMessage, setNotificationMessage] = useState<string>('');
   
